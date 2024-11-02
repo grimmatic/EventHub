@@ -1,0 +1,393 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kayıt Ol - EventHub</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+  <style>
+    body {
+      background-color: #f3f4f6;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .register-container {
+      min-height: calc(100vh - 4rem);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .register-card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 800px;
+      margin: 2rem;
+    }
+
+    .form-title {
+      color: #1f2937;
+      font-size: 1.875rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .form-section {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .form-section-title {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      color: #4b5563;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background-color: #3b82f6;
+      color: white;
+      padding: 0.875rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin-top: 1.5rem;
+    }
+
+    .btn-submit:hover {
+      background-color: #2563eb;
+    }
+
+    .terms-checkbox {
+      display: flex;
+      align-items: start;
+      margin: 1.5rem 0;
+      gap: 0.5rem;
+    }
+
+    .terms-checkbox input {
+      margin-top: 0.25rem;
+    }
+
+    .terms-checkbox label {
+      color: #4b5563;
+      font-size: 0.875rem;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    .login-link a {
+      color: #3b82f6;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    .interests-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .interest-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .profile-upload {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .profile-preview {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 2px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .profile-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    @media (max-width: 640px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .register-card {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+
+      .interests-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+<!-- Navigation aynı kalacak -->
+<nav class="bg-white border-gray-200 shadow-sm sticky top-0 z-50">
+  <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+    <a href="/" class="flex items-center space-x-3">
+      <span class="self-center text-2xl font-semibold whitespace-nowrap">EventHub</span>
+    </a>
+    <button data-collapse-toggle="navbar-default" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200">
+      <span class="sr-only">Menüyü aç</span>
+      <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+      </svg>
+    </button>
+    <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+      <ul class="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white">
+        <li>
+          <a href="/etkinlikler" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Etkinlikler</a>
+        </li>
+        <li>
+          <a href="/etkinlikHaritasi" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Etkinlik Nerede?</a>
+        </li>
+        <li>
+          <a href="/sohbet" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Sohbet</a>
+        </li>
+        <li>
+          <a href="/giris" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Giriş Yap</a>
+        </li>
+        <li>
+          <a href="/kayit" class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0">Kayıt Ol</a>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="register-container">
+  <div class="register-card">
+    <h2 class="form-title">Hesap Oluştur</h2>
+    <form th:action="@{/register}" method="post" enctype="multipart/form-data">
+      <!-- Temel Bilgiler -->
+      <div class="form-section">
+        <h3 class="form-section-title">Hesap Bilgileri</h3>
+        <div class="form-group">
+          <label class="form-label">Kullanıcı Adı*</label>
+          <input type="text" name="username" class="form-input" required placeholder="kullaniciadi">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Şifre*</label>
+            <input type="password" name="password" class="form-input" required placeholder="********">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Şifre Tekrar*</label>
+            <input type="password" name="passwordConfirm" class="form-input" required placeholder="********">
+          </div>
+        </div>
+      </div>
+
+      <!-- Kişisel Bilgiler -->
+      <div class="form-section">
+        <h3 class="form-section-title">Kişisel Bilgiler</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ad*</label>
+            <input type="text" name="firstName" class="form-input" required placeholder="Adınız">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Soyad*</label>
+            <input type="text" name="lastName" class="form-input" required placeholder="Soyadınız">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Doğum Tarihi*</label>
+            <input type="date" name="birthDate" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cinsiyet*</label>
+            <select name="gender" class="form-input" required>
+              <option value="">Seçiniz</option>
+              <option value="MALE">Erkek</option>
+              <option value="FEMALE">Kadın</option>
+              <option value="OTHER">Diğer</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">E-posta*</label>
+            <input type="email" name="email" class="form-input" required placeholder="ornek@email.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefon*</label>
+            <input type="tel" name="phone" class="form-input" required placeholder="5XX XXX XX XX">
+          </div>
+        </div>
+      </div>
+
+      <!-- İlgi Alanları -->
+      <div class="form-section">
+        <h3 class="form-section-title">İlgi Alanları</h3>
+        <div class="interests-grid">
+          <div class="interest-checkbox">
+            <input type="checkbox" id="interest-music" name="interests" value="MUSIC">
+            <label for="interest-music">Müzik</label>
+          </div>
+          <div class="interest-checkbox">
+            <input type="checkbox" id="interest-sports" name="interests" value="SPORTS">
+            <label for="interest-sports">Spor</label>
+          </div>
+          <div class="interest-checkbox">
+            <input type="checkbox" id="interest-technology" name="interests" value="TECHNOLOGY">
+            <label for="interest-technology">Teknoloji</label>
+          </div>
+          <div class="interest-checkbox">
+            <input type="checkbox" id="interest-art" name="interests" value="ART">
+            <label for="interest-art">Sanat</label>
+          </div>
+          <div class="interest-checkbox">
+            <input type="checkbox" id="interest-science" name="interests" value="SCIENCE">
+            <label for="interest-science">Bilim</label>
+          </div>
+          <div class="interest-checkbox">
+            <input type="checkbox" id="interest-food" name="interests" value="FOOD">
+            <label for="interest-food">Yemek</label>
+          </div>
+          <div class="interest-checkbox">
+            <input type="checkbox" id="interest-travel" name="interests" value="TRAVEL">
+            <label for="interest-travel">Seyahat</label>
+          </div>
+          <div class="interest-checkbox">
+            <input type="checkbox" id="interest-literature" name="interests" value="LITERATURE">
+            <label for="interest-literature">Edebiyat</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profil Fotoğrafı -->
+      <div class="form-section">
+        <h3 class="form-section-title">Profil Fotoğrafı</h3>
+        <div class="profile-upload">
+          <div class="profile-preview">
+            <img id="preview" src="/images/default-avatar.png" alt="Profil önizleme">
+          </div>
+          <div>
+            <input type="file" name="profileImage" id="profileImage" accept="image/*" class="form-input">
+            <p class="text-sm text-gray-500 mt-1">PNG, JPG veya GIF (Max. 2MB)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="terms-checkbox">
+        <input type="checkbox" id="terms" required>
+        <label for="terms">
+          Kullanım şartlarını ve gizlilik politikasını okudum ve kabul ediyorum. Verilerimin bu kapsamda işlenmesine izin veriyorum.
+        </label>
+      </div>
+
+      <button type="submit" class="btn-submit">Kayıt Ol</button>
+
+      <div class="login-link">
+        Zaten hesabınız var mı? <a href="/giris">Giriş Yap</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  // Profil fotoğrafı önizleme
+  document.getElementById('profileImage').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('preview').src = e.target.result;
+      }
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Form doğrulama
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const password = document.querySelector('input[name="password"]').value;
+    const passwordConfirm = document.querySelector('input[name="passwordConfirm"]').value;
+
+    if (password !== passwordConfirm) {
+      e.preventDefault();
+      alert('Şifreler eşleşmiyor!');
+      return;
+    }
+
+    const phone = document.querySelector('input[name="phone"]').value;
+    const phoneRegex = /^5[0-9]{9}$/;  // 5XX XXX XX XX formatı için
+    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      e.preventDefault();
+      alert('Geçerli bir telefon numarası giriniz (5XX XXX XX XX formatında)');
+      return;
+    }
+  });
+</script>
+</body>
+</html>

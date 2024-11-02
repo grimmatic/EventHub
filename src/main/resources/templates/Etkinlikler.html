@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etkinlikler - EventHub</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            padding: 4rem 0;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .event-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .filter-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-bar {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            padding-left: 3rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .search-bar input:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .page-button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            background: white;
+            color: #374151;
+            transition: all 0.2s;
+        }
+
+        .page-button:hover {
+            background: #f3f4f6;
+        }
+
+        .page-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 4rem;
+            background: white;
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation (Önceki sayfalarla aynı) -->
+<nav class="bg-white border-gray-200 shadow-sm sticky top-0 z-50">
+    <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+        <a href="/" class="flex items-center space-x-3">
+            <span class="self-center text-2xl font-semibold whitespace-nowrap">EventHub</span>
+        </a>
+        <button data-collapse-toggle="navbar-default" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200">
+            <span class="sr-only">Menüyü aç</span>
+            <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+            </svg>
+        </button>
+        <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+            <ul class="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white">
+                <li>
+                    <a href="/etkinlikler" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Etkinlikler</a>
+                </li>
+                <li>
+                    <a href="/etkinlikHaritasi" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Etkinlik Nerede?</a>
+                </li>
+                <li>
+                    <a href="/sohbet" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Sohbet</a>
+                </li>
+                <li>
+                    <a href="/giris" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Giriş Yap</a>
+                </li>
+                <li>
+                    <a href="/kayit" class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0">Kayıt Ol</a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Page Header -->
+<header class="page-header">
+    <div class="container mx-auto px-4">
+        <h1 class="text-4xl font-bold mb-4">Etkinlikler</h1>
+        <p class="text-xl opacity-90">Size en uygun etkinlikleri keşfedin</p>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="container mx-auto px-4 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Filter Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="filter-section">
+                <h2 class="text-xl font-semibold mb-4">Filtreler</h2>
+
+                <!-- Search -->
+                <div class="search-bar">
+                        <span class="search-icon">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </span>
+                    <input type="text" placeholder="Etkinlik ara..." class="w-full">
+                </div>
+
+                <!-- Categories -->
+                <div class="mb-6">
+                    <h3 class="font-medium mb-3">Kategoriler</h3>
+                    <div>
+                        <label class="flex items-center mb-2">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">Teknoloji</span>
+                        </label>
+                        <label class="flex items-center mb-2">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">Müzik</span>
+                        </label>
+                        <label class="flex items-center mb-2">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">Sanat</span>
+                        </label>
+                        <label class="flex items-center mb-2">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">Spor</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Date Filter -->
+                <div class="mb-6">
+                    <h3 class="font-medium mb-3">Tarih</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="date" class="form-radio h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">Bugün</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="date" class="form-radio h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">Bu Hafta</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="date" class="form-radio h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">Bu Ay</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Location Filter -->
+                <div class="mb-6">
+                    <h3 class="font-medium mb-3">Konum</h3>
+                    <select class="form-select w-full p-2 border border-gray-300 rounded-md">
+                        <option value="">Tüm Şehirler</option>
+                        <option value="istanbul">İstanbul</option>
+                        <option value="ankara">Ankara</option>
+                        <option value="izmir">İzmir</option>
+                    </select>
+                </div>
+
+                <!-- Price Range -->
+                <div>
+                    <h3 class="font-medium mb-3">Fiyat Aralığı</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">Ücretsiz</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">0-50 TL</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">50-100 TL</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-gray-700">100+ TL</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events Grid -->
+        <div class="lg:col-span-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Event Cards (12 adet örnek kart) -->
+                <div class="event-card">
+                    <img src="/api/placeholder/400/200" alt="Event" class="event-image">
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold mb-2">Tech Summit 2024</h3>
+                                <p class="text-gray-600">15 Aralık 2024, 10:00</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Teknoloji</span>
+                        </div>
+                        <p class="text-gray-600 mb-4 flex-1">Teknoloji dünyasının öncüleri ile buluşun ve geleceği şekillendirin.</p>
+                        <div class="flex justify-between items-center mt-auto">
+                                <span class="text-gray-500">
+                                    <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    İstanbul
+                                </span>
+                            <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">Detaylar →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Card 2 -->
+                <div class="event-card">
+                    <img src="/api/placeholder/400/200" alt="Event" class="event-image">
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold mb-2">Müzik Festivali</h3>
+                                <p class="text-gray-600">20 Aralık 2024, 18:00</p>
+                            </div>
+                            <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">Müzik</span>
+                        </div>
+                        <p class="text-gray-600 mb-4 flex-1">Açık havada unutulmaz bir müzik deneyimi yaşayın.</p>
+                        <div class="flex justify-between items-center mt-auto">
+                               <span class="text-gray-500">
+                                   <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                   </svg>
+                                   Ankara
+                               </span>
+                            <span class="text-green-600 font-medium">Ücretsiz</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Card 3 -->
+                <div class="event-card">
+                    <img src="/api/placeholder/400/200" alt="Event" class="event-image">
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold mb-2">Sanat Atölyesi</h3>
+                                <p class="text-gray-600">25 Aralık 2024, 14:00</p>
+                            </div>
+                            <span class="bg-pink-100 text-pink-800 text-xs font-medium px-2.5 py-0.5 rounded">Sanat</span>
+                        </div>
+                        <p class="text-gray-600 mb-4 flex-1">Profesyonel sanatçılar eşliğinde yaratıcılığınızı keşfedin.</p>
+                        <div class="flex justify-between items-center mt-auto">
+                               <span class="text-gray-500">
+                                   <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                   </svg>
+                                   İzmir
+                               </span>
+                            <span class="text-gray-600 font-medium">50 TL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diğer event cardları da aynı şekilde eklenebilir -->
+
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="page-button">←</button>
+                <button class="page-button active">1</button>
+                <button class="page-button">2</button>
+                <button class="page-button">3</button>
+                <button class="page-button">4</button>
+                <button class="page-button">5</button>
+                <button class="page-button">→</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Filtreleme işlemleri için JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+        // Arama fonksiyonu
+        const searchInput = document.querySelector('.search-bar input');
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            // Burada arama işlemleri yapılacak
+        });
+
+        // Kategori filtreleme
+        const categoryCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+        categoryCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                // Burada kategori filtreleme işlemleri yapılacak
+            });
+        });
+
+        // Sayfalama işlemleri
+        const pageButtons = document.querySelectorAll('.page-button');
+        pageButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Aktif sayfayı değiştir
+                document.querySelector('.page-button.active').classList.remove('active');
+                this.classList.add('active');
+                // Burada sayfalama işlemleri yapılacak
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
