@@ -33,6 +33,8 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
+                                "/uploads/**",
+                                "/static/**",
                                 "/error",
                                 "/webjars/**",
                                 "/api/**"
@@ -54,10 +56,12 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutRequestMatcher(new AntPathRequestMatcher("/cikis"))
                         .logoutSuccessUrl("/")
+                        .deleteCookies("JSESSIONID")
+                        .clearAuthentication(true)
+                        .invalidateHttpSession(true)
                         .permitAll()
                 )
                 .userDetailsService(userDetailsService);
-
         return http.build();
     }
 

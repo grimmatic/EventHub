@@ -5,11 +5,11 @@ import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
+import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -41,25 +41,28 @@ public class User implements UserDetails {
 
     @Column(unique = true)
     private String phone;
-    @Column(columnDefinition = "varchar(20) default 'ROLE_USER'")
-    private String role = "ROLE_USER";
 
-    @Column(name = "profile_image")
-    private String profileImageUrl;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private UserRole role = UserRole.ROLE_USER;
 
-    @ElementCollection
-    @CollectionTable(name = "user_interests",
-            joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "interest")
-    private Set<String> interests;
+
+    @Column(name = "interests", columnDefinition = "text[]")
+    private String[] interests;
 
     @Column(name = "total_points")
     private Integer totalPoints = 0;
 
+    @Column(name = "profile_image")
+    private String profileImageUrl;
+
+    @Transient  //
+    private MultipartFile profileImage;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return Collections.singletonList(new SimpleGrantedAuthority(role.getValue()));
     }
 
     @Override
@@ -86,14 +89,14 @@ public class User implements UserDetails {
     public boolean isCredentialsNonExpired() {
         return true;
     }
+    @Column(name = "enabled")
+    private Boolean enabled = true;
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled != null && enabled;
     }
 
-    // Lombok @Data anotasyonu toString(), equals() ve hashCode() metodlarını oluşturur
-    // ama password gibi hassas bilgileri göstermemek için toString'i override ediyoruz
     @Override
     public String toString() {
         return "User{" +

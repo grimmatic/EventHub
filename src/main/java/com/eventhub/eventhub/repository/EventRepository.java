@@ -14,4 +14,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query(value = "SELECT e FROM Event e WHERE e.approved = true ORDER BY e.startDate DESC LIMIT 3",
             nativeQuery = true)
     List<Event> findFeaturedEvents();
+
+    List<Event> findByApprovedIsFalseOrApprovedIsNull();
+    List<Event> findByApprovedIsTrue();
+    long countByApprovedIsTrue();
 }

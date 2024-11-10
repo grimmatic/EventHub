@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - EventHub</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+</head>
+<body class="bg-gray-100">
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container mx-auto px-4 py-8">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Onay Bekleyen Etkinlikler -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-bold mb-4">Onay Bekleyen Etkinlikler</h2>
+      <div class="space-y-4">
+        <div th:each="event : ${pendingEvents}" class="border rounded p-4">
+          <h3 class="font-semibold" th:text="${event.name}"></h3>
+          <p class="text-sm text-gray-600" th:text="${event.description}"></p>
+          <div class="mt-2 flex gap-2">
+            <form th:action="@{/admin/event/approve/{id}(id=${event.id})}" method="post">
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">Onayla</button>
+            </form>
+            <form th:action="@{/admin/event/reject/{id}(id=${event.id})}" method="post">
+              <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">Reddet</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kullanıcı Yönetimi -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-bold mb-4">Kullanıcı Yönetimi</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+          <tr>
+            <th class="text-left">Kullanıcı Adı</th>
+            <th class="text-left">E-posta</th>
+            <th class="text-left">Rol</th>
+            <th class="text-left">İşlemler</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="user : ${users}">
+            <td th:text="${user.username}"></td>
+            <td th:text="${user.email}"></td>
+            <td th:text="${user.role}"></td>
+            <td>
+              <form th:action="@{/admin/user/toggle-status/{id}(id=${user.id})}" method="post">
+                <button type="submit" class="text-blue-500 hover:text-blue-700">Durum Değiştir</button>
+              </form>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- İstatistikler -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+    <div class="bg-white rounded-lg shadow p-6 text-center">
+      <h3 class="font-semibold text-gray-600">Toplam Kullanıcı</h3>
+      <p class="text-2xl font-bold" th:text="${totalUsers}">0</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6 text-center">
+      <h3 class="font-semibold text-gray-600">Toplam Etkinlik</h3>
+      <p class="text-2xl font-bold" th:text="${totalEvents}">0</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6 text-center">
+      <h3 class="font-semibold text-gray-600">Aktif Etkinlikler</h3>
+      <p class="text-2xl font-bold" th:text="${activeEvents}">0</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -26,12 +26,39 @@ public class EventService {
         return eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Etkinlik bulunamadı"));
     }
+    public List<Event> getPendingEvents() {
+        return eventRepository.findByApprovedIsFalseOrApprovedIsNull();
+    }
+
 
     @Transactional
     public Event createEvent(Event event) {
         event.setCreator(userService.getCurrentUser());
         event.setApproved(false); // Admin onayı bekleyecek
         return eventRepository.save(event);
+    }
+    @Transactional
+    public void approveEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Etkinlik bulunamadı"));
+        event.setApproved(true);
+        eventRepository.save(event);
+    }
+
+    // Etkinliği reddet/sil
+    @Transactional
+    public void rejectEvent(Long eventId) {
+        eventRepository.deleteById(eventId);
+    }
+
+    // Toplam etkinlik sayısı
+    public long getTotalEvents() {
+        return eventRepository.count();
+    }
+
+    // Aktif (onaylanmış) etkinlik sayısı
+    public long getActiveEvents() {
+        return eventRepository.countByApprovedIsTrue();
     }
 
     public Map<String, Integer> getStats() {

@@ -31,6 +31,6 @@ public class Event {
     @JoinColumn(name = "creator_id", nullable = false)
     private User creator;
 
-
-    private boolean approved = false;
+    @Column(name = "approved")
+    private Boolean approved = false;
 }
