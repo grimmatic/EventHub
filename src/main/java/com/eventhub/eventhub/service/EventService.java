@@ -1,9 +1,6 @@
 package com.eventhub.eventhub.service;
 
-import com.eventhub.eventhub.entity.Event;
-import com.eventhub.eventhub.entity.Participant;
-import com.eventhub.eventhub.entity.User;
-import com.eventhub.eventhub.entity.UserPoints;
+import com.eventhub.eventhub.entity.*;
 import com.eventhub.eventhub.repository.EventRepository;
 import com.eventhub.eventhub.repository.ParticipantRepository;
 import com.eventhub.eventhub.repository.UserPointsRepository;
@@ -15,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,22 +38,24 @@ public class EventService {
 
     @Transactional
     public Event createEvent(Event event) {
-        // Eğer event'in creator'ı null ise ve authenticated user varsa, onu creator olarak ata
-        if (event.getCreator() == null) {
-            User creator = userService.getCurrentUser();
-            event.setCreator(creator);
+        User creator = userService.getCurrentUser();
+        event.setCreator(creator);
+
+        // Admin otomatik onay kontrolü
+        if (creator.getRole() == UserRole.ROLE_ADMIN) {
+            event.setApproved(true);
+        } else {
+            event.setApproved(false);
         }
-        if (event.getCreator() != null ) {
+
         if (hasDateConflict(event.getStartDate(), event.getEndDate())) {
             throw new RuntimeException("Bu tarihte başka bir etkinliğiniz bulunmaktadır.");
         }
-        }
+
         Event savedEvent = eventRepository.save(event);
 
-
-        if (event.getCreator() != null) {
-            userService.addPoints(event.getCreator().getId(), 15, "EVENT_CREATE", savedEvent);
-        }
+        // Etkinlik oluşturma puanı
+        userService.addPoints(creator.getId(), 15, "EVENT_CREATE", savedEvent);
 
         return savedEvent;
     }
@@ -73,8 +73,27 @@ public class EventService {
         return eventRepository.findByApprovedIsFalseOrApprovedIsNull();
 
     }
+    public Page<Event> getEventsByCategory(String category, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return eventRepository.findByApprovedIsTrueAndCategory(category, pageable);
+    }
+    public Page<Event> getEventsByDate(LocalDate date, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+        return eventRepository.findByApprovedIsTrueAndStartDateBetween(startOfDay, endOfDay, pageable);
+    }
 
+    public Page<Event> searchEvents(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return eventRepository.findByApprovedIsTrueAndNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                keyword, keyword, pageable);
+    }
 
+    public Page<Event> getEventsByDateRange(LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return eventRepository.findByApprovedIsTrueAndStartDateBetween(startDate, endDate, pageable);
+    }
 
     @Transactional
     public void joinEvent(Long eventId) {

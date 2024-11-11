@@ -172,75 +172,86 @@
     <div class="filter-section">
         <h2 class="text-xl font-semibold mb-4">Filtreler</h2>
 
-        <!-- Search -->
-        <div class="search-bar">
-                <span class="search-icon">
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Arama</label>
+            <div class="relative">
+                <input type="text"
+                       id="searchInput"
+                       th:value="${keyword}"
+                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                       placeholder="Etkinlik ara...">
+                <button onclick="search()"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
-                </span>
-            <input type="text" placeholder="Etkinlik ara..." class="w-full">
+                </button>
+            </div>
         </div>
 
-        <!-- Categories -->
         <div class="mb-6">
             <h3 class="font-medium mb-3">Kategoriler</h3>
             <div class="space-y-2">
-                <label class="flex items-center">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600" value="Müzik">
-                    <span class="ml-2">Müzik</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600" value="Spor">
-                    <span class="ml-2">Spor</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600" value="Teknoloji">
-                    <span class="ml-2">Teknoloji</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600" value="Sanat">
-                    <span class="ml-2">Sanat</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600" value="Bilim">
-                    <span class="ml-2">Bilim</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600" value="Yemek">
-                    <span class="ml-2">Yemek</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600" value="Seyahat">
-                    <span class="ml-2">Seyahat</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600" value="Edebiyat">
-                    <span class="ml-2">Edebiyat</span>
-                </label>
+                <th:block th:each="category : ${categories}">
+                    <label class="flex items-center">
+                        <input type="checkbox"
+                               th:checked="${selectedCategory == category}"
+                               onclick="filterByCategory(this.value)"
+                               class="form-checkbox h-4 w-4 text-blue-600"
+                               th:value="${category}">
+                        <span class="ml-2" th:text="${category}">Kategori</span>
+                    </label>
+                </th:block>
             </div>
         </div>
 
-        <!-- Date Filter -->
         <div class="mb-6">
             <h3 class="font-medium mb-3">Tarih</h3>
-            <div class="space-y-2">
+            <!-- Radio butonlar -->
+            <div class="space-y-2 mb-4">
                 <label class="flex items-center">
-                    <input type="radio" name="date" class="form-radio h-4 w-4 text-blue-600">
+                    <input type="radio"
+                           name="dateFilter"
+                           value="today"
+                           th:checked="${selectedDateFilter == 'today'}"
+                           onchange="filterByDateOption(this.value)"
+                           class="form-radio h-4 w-4 text-blue-600">
                     <span class="ml-2">Bugün</span>
                 </label>
                 <label class="flex items-center">
-                    <input type="radio" name="date" class="form-radio h-4 w-4 text-blue-600">
+                    <input type="radio"
+                           name="dateFilter"
+                           value="week"
+                           th:checked="${selectedDateFilter == 'week'}"
+                           onchange="filterByDateOption(this.value)"
+                           class="form-radio h-4 w-4 text-blue-600">
                     <span class="ml-2">Bu Hafta</span>
                 </label>
                 <label class="flex items-center">
-                    <input type="radio" name="date" class="form-radio h-4 w-4 text-blue-600">
+                    <input type="radio"
+                           name="dateFilter"
+                           value="month"
+                           th:checked="${selectedDateFilter == 'month'}"
+                           onchange="filterByDateOption(this.value)"
+                           class="form-radio h-4 w-4 text-blue-600">
                     <span class="ml-2">Bu Ay</span>
                 </label>
             </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Özel Tarih</label>
+                <input type="date"
+                       th:value="${specificDate}"
+                       onchange="filterBySpecificDate(this.value)"
+                       class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
         </div>
 
-
+        <button onclick="clearFilters()"
+                class="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
+            Filtreleri Temizle
+        </button>
 
 
     </div>
@@ -375,6 +386,48 @@
             }
         });
     });
+    function filterByCategory(category) {
+        window.location.href = `/event/etkinlikler?category=${encodeURIComponent(category)}`;
+    }
+
+    function clearFilters() {
+        window.location.href = '/event/etkinlikler';
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedCategory = urlParams.get('category');
+        const selectedDate = urlParams.get('startDate');
+
+        if (selectedCategory) {
+            const checkbox = document.querySelector(`input[value="${selectedCategory}"]`);
+            if (checkbox) checkbox.checked = true;
+        }
+
+        if (selectedDate) {
+            const dateInput = document.querySelector('input[type="date"]');
+            if (dateInput) dateInput.value = selectedDate;
+        }
+    });
+    function search() {
+        const keyword = document.getElementById('searchInput').value;
+        if (keyword.trim()) {
+            window.location.href = `/event/etkinlikler?keyword=${encodeURIComponent(keyword.trim())}`;
+        }
+    }
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            search();
+        }
+    });
+    function filterByDateOption(dateFilter) {
+        window.location.href = `/event/etkinlikler?dateFilter=${encodeURIComponent(dateFilter)}`;
+    }
+
+    function filterBySpecificDate(date) {
+        if (date) {
+            window.location.href = `/event/etkinlikler?specificDate=${encodeURIComponent(date)}`;
+        }
+    }
 </script>
 </body>
 </html>

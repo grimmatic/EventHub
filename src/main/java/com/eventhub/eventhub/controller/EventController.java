@@ -11,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -23,15 +24,64 @@ public class EventController {
     private final UserService userService;
 
     @GetMapping("/etkinlikler")
-    public String listEvents(Model model,
-                             @RequestParam(defaultValue = "0") int page) {
-        int pageSize = 6; // Her sayfada 6 etkinlik
-        Page<Event> eventPage = eventService.getAllEventsPaged(page, pageSize);
+    public String listEvents(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String dateFilter,
+            @RequestParam(required = false) String specificDate,
+            @RequestParam(defaultValue = "0") int page,
+            Model model) {
+
+        int pageSize = 6;
+        Page<Event> eventPage;
+
+        // Arama kontrolü
+        if (keyword != null && !keyword.isEmpty()) {
+            eventPage = eventService.searchEvents(keyword, page, pageSize);
+        }
+        // Kategori kontrolü
+        else if (category != null && !category.isEmpty()) {
+            eventPage = eventService.getEventsByCategory(category, page, pageSize);
+        }
+        // Tarih filtresi kontrolü
+        else if (dateFilter != null || (specificDate != null && !specificDate.isEmpty())) {
+            LocalDateTime startDate = null;
+            LocalDateTime endDate = LocalDateTime.now().plusYears(100); // Gelecekteki bir tarih
+
+            if (specificDate != null && !specificDate.isEmpty()) {
+                startDate = LocalDate.parse(specificDate).atStartOfDay();
+                endDate = startDate.plusDays(1);
+            } else {
+                switch (dateFilter) {
+                    case "today":
+                        startDate = LocalDate.now().atStartOfDay();
+                        endDate = startDate.plusDays(1);
+                        break;
+                    case "week":
+                        startDate = LocalDate.now().atStartOfDay();
+                        endDate = startDate.plusWeeks(1);
+                        break;
+                    case "month":
+                        startDate = LocalDate.now().atStartOfDay();
+                        endDate = startDate.plusMonths(1);
+                        break;
+                }
+            }
+            eventPage = eventService.getEventsByDateRange(startDate, endDate, page, pageSize);
+        }
+        // Filtre yoksa tüm etkinlikleri getir
+        else {
+            eventPage = eventService.getAllEventsPaged(page, pageSize);
+        }
 
         model.addAttribute("events", eventPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", eventPage.getTotalPages());
         model.addAttribute("categories", eventService.getAllCategories());
+        model.addAttribute("selectedCategory", category);
+        model.addAttribute("selectedDateFilter", dateFilter);
+        model.addAttribute("specificDate", specificDate);
+        model.addAttribute("keyword", keyword);
 
         return "event/etkinlikler";
     }
