@@ -147,15 +147,13 @@
                 </div>
             </div>
             <div>
-                <button th:if="${!isParticipant}"
-                        id="joinButton"
-                        class="join-button bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition shadow-lg">
+                <button th:if="${!isParticipant}" id="joinButton"
+                        class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg">
                     Katıl
                 </button>
-                <button th:if="${isParticipant}"
-                        class="bg-green-500 text-white px-8 py-3 rounded-lg font-semibold"
-                        disabled>
-                    Katıldınız
+                <button th:if="${isParticipant}" id="leaveButton"
+                        class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-lg">
+                    Etkinlikten Çık
                 </button>
             </div>
         </div>
@@ -469,6 +467,32 @@
         chatInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
+            }
+        });
+    }
+    const leaveButton = document.getElementById('leaveButton');
+    if (leaveButton) {
+        leaveButton.addEventListener('click', async function() {
+            if (confirm('Bu etkinlikten çıkmak istediğinize emin misiniz? Kazandığınız puanlar geri alınacaktır.')) {
+                try {
+                    const eventId = window.location.pathname.split('/').pop();
+                    const response = await fetch(`/event/leave/${eventId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        alert(result.message || 'Bir hata oluştu');
+                    }
+                } catch (error) {
+                    console.error('Hata:', error);
+                    alert('Bir hata oluştu: ' + error.message);
+                }
             }
         });
     }

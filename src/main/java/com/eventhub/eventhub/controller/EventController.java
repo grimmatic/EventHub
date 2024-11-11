@@ -5,6 +5,7 @@ import com.eventhub.eventhub.entity.User;
 import com.eventhub.eventhub.service.EventService;
 import com.eventhub.eventhub.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -21,13 +22,17 @@ public class EventController {
     private final EventService eventService;
     private final UserService userService;
 
-    // Tüm etkinlikleri listeleyen sayfa
     @GetMapping("/etkinlikler")
-    public String listEvents(Model model) {
-        List<Event> events = eventService.getAllEvents();
-        List<String> categories = eventService.getAllCategories();
-        model.addAttribute("events", events);
-        model.addAttribute("categories", categories);
+    public String listEvents(Model model,
+                             @RequestParam(defaultValue = "0") int page) {
+        int pageSize = 6; // Her sayfada 6 etkinlik
+        Page<Event> eventPage = eventService.getAllEventsPaged(page, pageSize);
+
+        model.addAttribute("events", eventPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", eventPage.getTotalPages());
+        model.addAttribute("categories", eventService.getAllCategories());
+
         return "event/etkinlikler";
     }
 

@@ -10,6 +10,8 @@ import java.util.List;
 public interface UserPointsRepository extends JpaRepository<UserPoints, Long> {
     List<UserPoints> findByUserId(Long userId);
 
+    List<UserPoints> findByUserIdAndEventIdAndActivityType(Long userId, Long eventId, String activityType);
+
     @Query("SELECT COALESCE(SUM(up.points), 0) FROM UserPoints up WHERE up.user.id = :userId")
     Integer getTotalPointsByUserId(@Param("userId") Long userId);
 

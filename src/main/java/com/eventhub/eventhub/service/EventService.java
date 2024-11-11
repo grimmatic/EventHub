@@ -3,9 +3,15 @@ package com.eventhub.eventhub.service;
 import com.eventhub.eventhub.entity.Event;
 import com.eventhub.eventhub.entity.Participant;
 import com.eventhub.eventhub.entity.User;
+import com.eventhub.eventhub.entity.UserPoints;
 import com.eventhub.eventhub.repository.EventRepository;
 import com.eventhub.eventhub.repository.ParticipantRepository;
+import com.eventhub.eventhub.repository.UserPointsRepository;
+import com.eventhub.eventhub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +25,8 @@ public class EventService {
     private final EventRepository eventRepository;
     private final ParticipantRepository participantRepository;
     private final UserService userService;
+    private final UserRepository userRepository;
+    private final UserPointsRepository userPointsRepository;
 
     public List<User> getEventParticipants(Long eventId) {
         return participantRepository.findByEventId(eventId).stream()
@@ -91,11 +99,30 @@ public class EventService {
         userService.addPoints(currentUser.getId(), 10, "EVENT_JOIN", event);
     }
 
-
     @Transactional
     public void leaveEvent(Long eventId) {
         User currentUser = userService.getCurrentUser();
+        Event event = getEventById(eventId);
+
+        // Katılımcıyı etkinlikten çıkar
         participantRepository.deleteByUserIdAndEventId(currentUser.getId(), eventId);
+
+        // Puanları geri al
+        List<UserPoints> eventPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                currentUser.getId(),
+                eventId,
+                "EVENT_JOIN"
+        );
+
+        if (!eventPoints.isEmpty()) {
+            UserPoints points = eventPoints.get(0);
+            // Kullanıcının toplam puanından düş
+            currentUser.setTotalPoints(currentUser.getTotalPoints() - points.getPoints());
+            userRepository.save(currentUser);
+
+            // Puan kaydını sil
+            userPointsRepository.delete(points);
+        }
     }
 
     public boolean hasDateConflict(LocalDateTime startDate, LocalDateTime endDate) {
@@ -175,5 +202,9 @@ public class EventService {
 
     public int getTotalParticipantsByOrganizer(Long organizerId) {
         return participantRepository.countParticipantsByOrganizer(organizerId);
+    }
+    public Page<Event> getAllEventsPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return eventRepository.findByApprovedIsTrue(pageable);
     }
 }
