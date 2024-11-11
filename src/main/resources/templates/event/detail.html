@@ -1,10 +1,477 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${event.name + ' - EventHub'}">Etkinlik Detayı - EventHub</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .event-header {
+            background: linear-gradient(to right, #3b82f6, #2563eb);
+            padding: 4rem 0;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://via.placeholder.com/1200x400') center/cover;
+            opacity: 0.2;
+        }
+
+        .map-container {
+            height: 400px;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+        }
+
+        .message-sent {
+            background: #eff6ff;
+            margin-left: auto;
+            color: #1e40af;
+        }
+
+        .message-received {
+            background: #f3f4f6;
+            margin-right: auto;
+            color: #374151;
+        }
+
+        .participant-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .join-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .join-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%) scale(0);
+            border-radius: 50%;
+            transition: transform 0.5s;
+        }
+
+        .join-button:hover::after {
+            transform: translate(-50%, -50%) scale(2);
+        }
+    </style>
 </head>
 <body>
+<!-- Navigation -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
 
+<!-- Event Header -->
+<div class="event-header relative">
+    <div class="max-w-6xl mx-auto px-4 relative">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-bold mb-4" th:text="${event.name}">Tech Summit 2024</h1>
+                <div class="flex items-center gap-4 text-blue-100">
+                        <span class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span th:text="${#temporals.format(event.startDate, 'dd MMMM yyyy HH:mm')}">15 Aralık 2024, 10:00</span>
+                        </span>
+                    <span class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span th:text="${event.location}">İstanbul</span>
+                        </span>
+                    <span class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                            </svg>
+                            <span th:text="${event.category}">Teknoloji</span>
+                        </span>
+                </div>
+            </div>
+            <div>
+                <button th:if="${!isParticipant}"
+                        id="joinButton"
+                        class="join-button bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition shadow-lg">
+                    Katıl
+                </button>
+                <button th:if="${isParticipant}"
+                        class="bg-green-500 text-white px-8 py-3 rounded-lg font-semibold"
+                        disabled>
+                    Katıldınız
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column -->
+        <div class="lg:col-span-2">
+            <!-- Event Description -->
+            <div class="bg-white rounded-lg p-6 mb-8 shadow">
+                <h2 class="text-2xl font-semibold mb-4">Etkinlik Detayları</h2>
+                <p class="text-gray-600 mb-6" th:text="${event.description}">
+                    Tech Summit 2024, teknoloji dünyasının öncü isimlerini bir araya getiriyor...
+                </p>
+
+                <!-- Event Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="text-2xl font-bold text-blue-600" th:text="${participants.size()}">150</div>
+                        <div class="text-gray-600">Katılımcı</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="text-2xl font-bold text-blue-600">4</div>
+                        <div class="text-gray-600">Saat</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="text-2xl font-bold text-blue-600">3</div>
+                        <div class="text-gray-600">Gün Kaldı</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Map -->
+            <div class="bg-white rounded-lg p-6 mb-8 shadow">
+                <h2 class="text-2xl font-semibold mb-4">Konum</h2>
+                <div class="map-container" id="map">
+                    <!-- Harita buraya gelecek -->
+                </div>
+                <div class="mt-4">
+                    <h3 class="font-semibold mb-2">Rota Planla</h3>
+                    <div class="flex gap-4">
+                        <button class="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                            </svg>
+                            Arabayla
+                        </button>
+                        <button class="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
+                            </svg>
+                            Toplu Taşıma
+                        </button>
+                        <button class="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Yürüyerek
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Chat (Only visible to participants) -->
+            <div th:if="${isParticipant}" class="chat-container">
+                <div class="p-4 bg-blue-50 border-b">
+                    <h2 class="text-xl font-semibold">Etkinlik Sohbeti</h2>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Example messages -->
+                    <div class="message message-received">
+                        <div class="flex items-start">
+                            <img src="/images/default-avatar.png" alt="User" class="w-8 h-8 rounded-full mr-3">
+                            <div>
+                                <div class="font-semibold text-sm">Ahmet Yılmaz</div>
+                                <div>Etkinliğe nasıl ulaşabilirim?</div>
+                                <div class="text-xs text-gray-500 mt-1">10:30</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="message message-sent">
+                        <div class="flex items-start justify-end">
+                            <div class="text-right">
+                                <div class="font-semibold text-sm">Sen</div>
+                                <div>Metro ile gelebilirsiniz, durak çok yakın.</div>
+                                <div class="text-xs text-gray-500 mt-1">10:32</div>
+                            </div>
+                            <img src="/images/default-avatar.png" alt="You" class="w-8 h-8 rounded-full ml-3">
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 border-t">
+                    <div class="flex gap-2">
+                        <input type="text" class="flex-1 p-2 border rounded-lg" placeholder="Mesajınızı yazın...">
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg p-6 mb-8 shadow">
+            <h2 class="text-xl font-semibold mb-4">Etkinlik Organizatörü</h2>
+            <div class="flex items-center mb-4">
+                <img th:if="${event.creator.profileImageUrl != null}"
+                     th:src="${event.creator.profileImageUrl}"
+                     src="/images/default-avatar.png"
+                     alt="Creator"
+                     class="w-12 h-12 rounded-full border-2 border-blue-100">
+                <div class="ml-3">
+                    <h3 class="font-semibold" th:text="${event.creator.firstName + ' ' + event.creator.lastName}">
+                        John Doe
+                    </h3>
+                    <p class="text-sm text-gray-600" th:text="${'@' + event.creator.username}">@johndoe</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                <span class="inline-flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Organizatör Hakkında -->
+            <div class="mb-4 text-gray-600 text-sm">
+                <p class="text-gray-600 text-sm">
+                    Etkinlik organizatörü
+                </p>
+            </div>
+
+            <!-- İletişim Seçenekleri -->
+            <div class="space-y-2">
+                <!-- Mesaj Gönder Butonu -->
+                <button  onclick="openChatModal()"
+                        class="w-full flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    Mesaj Gönder
+                </button>
+
+                <!-- Profili Görüntüle Butonu -->
+                <a th:href="@{'/user/profil/' + ${event.creator.id}}"
+                   class="w-full flex items-center justify-center px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Profili Görüntüle
+                </a>
+
+                <!-- Etkinlikleri Görüntüle -->
+                <a th:href="@{'/event/organizer/' + ${event.creator.id}}"
+                   class="w-full flex items-center justify-center px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4 0h2m-2 0a2 2 0 00-2 2v.5a2 2 0 002 2h2a2 2 0 002-2V11a2 2 0 00-2-2h-2z"/>
+                    </svg>
+                    Diğer Etkinlikleri
+                </a>
+            </div>
+
+            <!-- Organizatör İstatistikleri -->
+            <div class="mt-6 grid grid-cols-3 gap-4 border-t pt-4">
+                <div class="text-center">
+                    <div class="text-lg font-semibold text-blue-600"
+                         th:text="${eventCount}">15</div>
+                    <div class="text-xs text-gray-500">Etkinlik</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-semibold text-blue-600"
+                         th:text="${totalParticipants}">350</div>
+                    <div class="text-xs text-gray-500">Katılımcı</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-semibold text-blue-600"
+                         th:text="${event.creator.totalPoints}">450</div>
+                    <div class="text-xs text-gray-500">Puan</div>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center mb-4">
+            <img th:src="${event.creator.profileImageUrl}"
+                 src="/images/default-avatar.png"
+                 alt="Creator"
+                 class="w-12 h-12 rounded-full">
+            <div class="ml-3">
+                <h3 class="font-semibold" th:text="${event.creator.firstName + ' ' + event.creator.lastName}">
+                    Etkinlik Organizatörü
+                </h3>
+                <p class="text-sm text-gray-600">Organizatör</p>
+            </div>
+        </div>
+        <button class="w-full bg-blue-50 text-blue-600 py-2 px-4 rounded-lg hover:bg-blue-100 transition">
+            Mesaj Gönder
+        </button>
+    </div>
+
+    <!-- Participants -->
+    <div class="bg-white rounded-lg p-6 mb-8 shadow">
+        <h2 class="text-xl font-semibold mb-4">Katılımcılar</h2>
+        <div class="participant-list space-y-4">
+            <div th:each="participant : ${participants}" class="flex items-center">
+                <img th:src="${participant.profileImageUrl}"
+                     src="/images/default-avatar.png"
+                     alt="Participant"
+                     class="w-10 h-10 rounded-full">
+                <div class="ml-3">
+                    <p class="font-medium" th:text="${participant.firstName + ' ' + participant.lastName}">
+                        Katılımcı İsmi
+                    </p>
+                    <p class="text-sm text-gray-500" th:text="${participant.username}">@username</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Similar Events -->
+    <div class="bg-white rounded-lg p-6 shadow">
+        <h2 class="text-xl font-semibold mb-4">Benzer Etkinlikler</h2>
+        <div class="space-y-4">
+            <div th:each="similarEvent : ${similarEvents}" class="flex items-center">
+                <img src="/api/placeholder/80/80" alt="Event" class="w-16 h-16 rounded-lg object-cover">
+                <div class="ml-3">
+                    <h3 class="font-medium" th:text="${similarEvent.name}">Benzer Etkinlik</h3>
+                    <p class="text-sm text-gray-500"
+                       th:text="${#temporals.format(similarEvent.startDate, 'dd MMM yyyy')}">
+                        Tarih
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const joinButton = document.getElementById('joinButton');
+
+        if (joinButton) {
+            joinButton.addEventListener('click', async function() {
+                try {
+                    const eventId = window.location.pathname.split('/').pop();
+                    const response = await fetch(`/event/join/${eventId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        // Butonu güncelle
+                        joinButton.textContent = 'Katıldınız';
+                        joinButton.classList.remove('bg-white', 'text-blue-600');
+                        joinButton.classList.add('bg-green-500', 'text-white');
+                        joinButton.disabled = true;
+
+                        // Sayfayı yenile
+                        window.location.reload();
+                    } else {
+                        alert(result.message || 'Bir hata oluştu');
+                    }
+                } catch (error) {
+                    console.error('Hata:', error);
+                    alert('Bir hata oluştu: ' + error.message);
+                }
+            });
+        }
+    });
+
+    // Chat functionality
+    const chatInput = document.querySelector('.chat-container input');
+    const sendButton = document.querySelector('.chat-container button');
+
+    if (chatInput && sendButton) {
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (message) {
+                // Message send logic here
+                const messageHtml = `
+                        <div class="message message-sent">
+                            <div class="flex items-start justify-end">
+                                <div class="text-right">
+                                    <div class="font-semibold text-sm">Sen</div>
+                                    <div>${message}</div>
+                                    <div class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</div>
+                                </div>
+                                <img src="/images/default-avatar.png" alt="You" class="w-8 h-8 rounded-full ml-3">
+                            </div>
+                        </div>
+                    `;
+                chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+                chatInput.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+</script>
 </body>
 </html>

@@ -3,6 +3,8 @@ package com.eventhub.eventhub.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "events")
@@ -33,4 +35,8 @@ public class Event {
 
     @Column(name = "approved")
     private Boolean approved = false;
+
+
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    private List<Participant> participants = new ArrayList<>();
 }

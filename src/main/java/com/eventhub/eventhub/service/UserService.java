@@ -1,7 +1,10 @@
 package com.eventhub.eventhub.service;
 
+import com.eventhub.eventhub.entity.Event;
 import com.eventhub.eventhub.entity.User;
+import com.eventhub.eventhub.entity.UserPoints;
 import com.eventhub.eventhub.entity.UserRole;
+import com.eventhub.eventhub.repository.UserPointsRepository;
 import com.eventhub.eventhub.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final UserPointsRepository userPointsRepository;
     private static final String DEFAULT_AVATAR = "/images/default-avatar.png";
     @Value("${file.upload-dir:uploads/profiles}")
     private String uploadDir;
@@ -234,6 +238,44 @@ public class UserService {
         user.setRole(UserRole.ROLE_ADMIN);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public void addPoints(Long userId, Integer points, String activityType, Event event) {
+        User user = getUserById(userId);
+
+        // İlk etkinlik katılımı kontrolü
+        if ("EVENT_JOIN".equals(activityType) && !userPointsRepository.hasFirstEventBonus(userId)) {
+            // İlk katılım bonusu
+            UserPoints firstEventBonus = new UserPoints();
+            firstEventBonus.setUser(user);
+            firstEventBonus.setPoints(20);
+            firstEventBonus.setActivityType("FIRST_EVENT");
+            firstEventBonus.setEvent(event);
+            userPointsRepository.save(firstEventBonus);
+
+            user.setTotalPoints(user.getTotalPoints() + 20);
+        }
+
+        // Normal puan ekleme
+        UserPoints userPoints = new UserPoints();
+        userPoints.setUser(user);
+        userPoints.setPoints(points);
+        userPoints.setActivityType(activityType);
+        userPoints.setEvent(event);
+        userPointsRepository.save(userPoints);
+
+        // Kullanıcının toplam puanını güncelle
+        user.setTotalPoints(user.getTotalPoints() + points);
+        userRepository.save(user);
+    }
+
+    public Integer getTotalPoints(Long userId) {
+        return userPointsRepository.getTotalPointsByUserId(userId);
+    }
+
+    public List<UserPoints> getUserPointsHistory(Long userId) {
+        return userPointsRepository.findByUserId(userId);
     }
 
 

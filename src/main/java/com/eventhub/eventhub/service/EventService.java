@@ -1,25 +1,59 @@
 package com.eventhub.eventhub.service;
 
 import com.eventhub.eventhub.entity.Event;
+import com.eventhub.eventhub.entity.Participant;
+import com.eventhub.eventhub.entity.User;
 import com.eventhub.eventhub.repository.EventRepository;
+import com.eventhub.eventhub.repository.ParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class EventService {
     private final EventRepository eventRepository;
+    private final ParticipantRepository participantRepository;
     private final UserService userService;
 
-    public List<Event> getAllEvents() {
-        return eventRepository.findAllApprovedEvents();
+    public List<User> getEventParticipants(Long eventId) {
+        return participantRepository.findByEventId(eventId).stream()
+                .map(Participant::getUser)
+                .collect(Collectors.toList());
     }
 
-    public List<Event> getFeaturedEvents() {
-        return eventRepository.findFeaturedEvents();
+    public boolean isUserParticipant(Long eventId, Long userId) {
+        return participantRepository.existsByUserIdAndEventId(userId, eventId);
+    }
+
+    @Transactional
+    public Event createEvent(Event event) {
+        // Eğer event'in creator'ı null ise ve authenticated user varsa, onu creator olarak ata
+        if (event.getCreator() == null) {
+            User creator = userService.getCurrentUser();
+            event.setCreator(creator);
+        }
+        if (event.getCreator() != null ) {
+        if (hasDateConflict(event.getStartDate(), event.getEndDate())) {
+            throw new RuntimeException("Bu tarihte başka bir etkinliğiniz bulunmaktadır.");
+        }
+        }
+        Event savedEvent = eventRepository.save(event);
+
+
+        if (event.getCreator() != null) {
+            userService.addPoints(event.getCreator().getId(), 15, "EVENT_CREATE", savedEvent);
+        }
+
+        return savedEvent;
+    }
+
+    public List<Event> getAllEvents() {
+        return eventRepository.findByApprovedIsTrue();
     }
 
     public Event getEventById(Long id) {
@@ -27,50 +61,119 @@ public class EventService {
                 .orElseThrow(() -> new RuntimeException("Etkinlik bulunamadı"));
     }
     public List<Event> getPendingEvents() {
+
         return eventRepository.findByApprovedIsFalseOrApprovedIsNull();
+
+    }
+
+
+
+    @Transactional
+    public void joinEvent(Long eventId) {
+        Event event = getEventById(eventId);
+        User currentUser = userService.getCurrentUser();
+
+        if (isUserParticipant(eventId, currentUser.getId())) {
+            throw new RuntimeException("Bu etkinliğe zaten katıldınız!");
+        }
+
+        if (hasDateConflict(event.getStartDate(), event.getEndDate())) {
+            throw new RuntimeException("Bu tarihte başka bir etkinliğiniz bulunmaktadır!");
+        }
+
+        // Yeni katılımcı kaydı oluştur
+        Participant participant = new Participant();
+        participant.setUser(currentUser);
+        participant.setEvent(event);
+        participantRepository.save(participant);
+
+        // Kullanıcıya puan ekle
+        userService.addPoints(currentUser.getId(), 10, "EVENT_JOIN", event);
     }
 
 
     @Transactional
-    public Event createEvent(Event event) {
-        event.setCreator(userService.getCurrentUser());
-        event.setApproved(false); // Admin onayı bekleyecek
-        return eventRepository.save(event);
+    public void leaveEvent(Long eventId) {
+        User currentUser = userService.getCurrentUser();
+        participantRepository.deleteByUserIdAndEventId(currentUser.getId(), eventId);
     }
+
+    public boolean hasDateConflict(LocalDateTime startDate, LocalDateTime endDate) {
+        try {
+            User currentUser = userService.getCurrentUser();
+            List<Event> userEvents = eventRepository.findByParticipantsUser(currentUser);
+            return userEvents.stream().anyMatch(event ->
+                    (startDate.isAfter(event.getStartDate()) && startDate.isBefore(event.getEndDate())) ||
+                            (endDate.isAfter(event.getStartDate()) && endDate.isBefore(event.getEndDate())) ||
+                            (startDate.isBefore(event.getStartDate()) && endDate.isAfter(event.getEndDate()))
+            );
+        } catch (RuntimeException e) {
+            // Eğer oturum açılmamışsa, çakışma kontrolünü atla
+            return false;
+        }
+    }
+
+
+    public List<Event> getSimilarEvents(Long eventId) {
+        Event event = getEventById(eventId);
+
+        // Aynı kategorideki diğer etkinlikleri getir
+        return eventRepository.findByCategory(event.getCategory()).stream()
+                .filter(e -> !e.getId().equals(eventId))
+                .limit(3)
+                .collect(Collectors.toList());
+    }
+
+
+
+    public List<Event> searchEvents(String keyword, String category, String location) {
+        if (keyword == null && category == null && location == null) {
+            return getAllEvents();
+        }
+
+        return eventRepository.findAllApprovedEvents().stream()
+                .filter(event ->
+                        (keyword == null || event.getName().toLowerCase().contains(keyword.toLowerCase()) ||
+                                event.getDescription().toLowerCase().contains(keyword.toLowerCase())) &&
+                                (category == null || event.getCategory().equals(category)) &&
+                                (location == null || event.getLocation().toLowerCase().contains(location.toLowerCase()))
+                )
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void approveEvent(Long eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Etkinlik bulunamadı"));
+        Event event = getEventById(eventId);
         event.setApproved(true);
         eventRepository.save(event);
     }
 
-    // Etkinliği reddet/sil
     @Transactional
     public void rejectEvent(Long eventId) {
         eventRepository.deleteById(eventId);
     }
 
-    // Toplam etkinlik sayısı
     public long getTotalEvents() {
+
         return eventRepository.count();
+
     }
 
-    // Aktif (onaylanmış) etkinlik sayısı
     public long getActiveEvents() {
+
         return eventRepository.countByApprovedIsTrue();
+
     }
 
-    public Map<String, Integer> getStats() {
-        return Map.of(
-                "totalEvents", (int) eventRepository.count(),
-                "activeEvents", eventRepository.findAllApprovedEvents().size(),
-                "categories", 4, // Sabit değer yerine gerçek kategori sayısı alınabilir
-                "cities", 50    // Sabit değer yerine gerçek şehir sayısı alınabilir
-        );
-    }
 
     public List<String> getAllCategories() {
-        return List.of("TECHNOLOGY", "MUSIC", "SPORTS", "ART", "EDUCATION", "SOCIAL");
+        return List.of("Müzik", "Spor", "Teknoloji", "Sanat", "Bilim", "Yemek" ,"Seyahat", "Edebiyat");
+    }
+    public List<Event> getEventsByOrganizer(Long organizerId) {
+        return eventRepository.findByCreatorId(organizerId);
+    }
+
+    public int getTotalParticipantsByOrganizer(Long organizerId) {
+        return participantRepository.countParticipantsByOrganizer(organizerId);
     }
 }

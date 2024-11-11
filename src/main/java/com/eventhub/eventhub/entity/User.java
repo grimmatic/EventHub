@@ -7,6 +7,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -47,14 +48,24 @@ public class User implements UserDetails {
     private UserRole role = UserRole.ROLE_USER;
 
 
-    @Column(name = "interests", columnDefinition = "text[]")
-    private String[] interests;
+    @Column(name = "interests")
+    private String interests;
+
+    public String[] getInterests() {
+        return interests != null ? interests.split(",") : new String[0];
+    }
+
+    public void setInterests(String[] interests) {
+        this.interests = interests != null ? String.join(",", interests) : null;
+    }
 
     @Column(name = "total_points")
     private Integer totalPoints = 0;
 
+
     @Column(name = "profile_image")
     private String profileImageUrl;
+
 
     @Transient  //
     private MultipartFile profileImage;
@@ -96,6 +107,7 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled != null && enabled;
     }
+
 
     @Override
     public String toString() {

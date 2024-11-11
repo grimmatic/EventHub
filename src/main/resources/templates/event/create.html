@@ -1,10 +1,228 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etkinlik Oluştur - EventHub</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .create-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .create-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .location-preview {
+            height: 200px;
+            background: #f3f4f6;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .date-warning {
+            display: none;
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .date-warning.show {
+            display: block;
+        }
+    </style>
 </head>
 <body>
+<!-- Navigation -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
 
+<div class="create-container">
+    <div class="create-card">
+        <h1 class="text-2xl font-bold mb-6">Yeni Etkinlik Oluştur</h1>
+
+        <form th:action="@{/event/create}" method="post" enctype="multipart/form-data">
+            <!-- Temel Bilgiler -->
+            <div class="form-section">
+                <h2 class="text-lg font-semibold mb-4">Temel Bilgiler</h2>
+
+                <div class="form-group">
+                    <label class="form-label" for="name">Etkinlik Adı*</label>
+                    <input type="text" id="name" name="name" class="form-input" required
+                           placeholder="Etkinliğiniz için açıklayıcı bir isim">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="description">Açıklama*</label>
+                    <textarea id="description" name="description" rows="4" class="form-input" required
+                              placeholder="Etkinliğiniz hakkında detaylı bilgi verin"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="category">Kategori*</label>
+                    <select id="category" name="category" class="form-input" required>
+                        <option value="">Kategori Seçin</option>
+                        <option th:each="category : ${categories}"
+                                th:value="${category}"
+                                th:text="${category}">Kategori</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tarih ve Zaman -->
+            <div class="form-section">
+                <h2 class="text-lg font-semibold mb-4">Tarih ve Zaman</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="startDate">Başlangıç Tarihi ve Saati*</label>
+                        <input type="datetime-local" id="startDate" name="startDate" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="endDate">Bitiş Tarihi ve Saati*</label>
+                        <input type="datetime-local" id="endDate" name="endDate" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="date-warning" id="dateWarning">
+                    ⚠️ Seçtiğiniz tarihte başka bir etkinliğiniz bulunmaktadır.
+                </div>
+            </div>
+
+            <!-- Konum -->
+            <div class="form-section">
+                <h2 class="text-lg font-semibold mb-4">Konum</h2>
+
+                <div class="form-group">
+                    <label class="form-label" for="location">Adres*</label>
+                    <input type="text" id="location" name="location" class="form-input" required
+                           placeholder="Etkinlik konumunun tam adresi">
+                </div>
+
+                <div class="location-preview" id="locationPreview">
+                    <!-- Harita buraya gelecek -->
+                </div>
+            </div>
+
+            <!-- Gönder -->
+            <div class="flex justify-between items-center">
+                <button type="button" onclick="history.back()"
+                        class="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition">
+                    İptal
+                </button>
+
+                <button type="submit"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    Etkinlik Oluştur
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Tarih kontrolleri
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const dateWarning = document.getElementById('dateWarning');
+
+    function checkDateConflicts() {
+        const startDate = new Date(startDateInput.value);
+        const endDate = new Date(endDateInput.value);
+
+        if (endDate <= startDate) {
+            dateWarning.textContent = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.";
+            dateWarning.classList.add('show');
+            return;
+        }
+
+        // Backend'den tarih çakışması kontrolü
+        fetch('/event/check-conflicts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString()
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.hasConflict) {
+                    dateWarning.textContent = "Bu tarihte başka bir etkinliğiniz bulunmaktadır.";
+                    dateWarning.classList.add('show');
+                } else {
+                    dateWarning.classList.remove('show');
+                }
+            });
+    }
+
+    startDateInput.addEventListener('change', checkDateConflicts);
+    endDateInput.addEventListener('change', checkDateConflicts);
+
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (dateWarning.classList.contains('show')) {
+            alert('Lütfen tarih çakışmalarını düzeltin.');
+            return;
+        }
+
+        // Form submission
+        this.submit();
+    });
+</script>
 </body>
 </html>
