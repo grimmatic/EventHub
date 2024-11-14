@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${event.name + ' - EventHub'}">Etkinlik Detayı - EventHub</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
     <style>
         body {
@@ -36,6 +38,19 @@
             border-radius: 0.5rem;
             overflow: hidden;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            z-index: 1;
+        }
+
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            border-radius: 0.5rem;
         }
 
         .chat-container {
@@ -82,7 +97,7 @@
             margin-top: 2rem;
         }
 
-        .stat-card {
+        .stat-drivingd {
             background: white;
             padding: 1.5rem;
             border-radius: 0.5rem;
@@ -174,15 +189,15 @@
 
                 <!-- Event Stats -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-drivingd">
                         <div class="text-2xl font-bold text-blue-600" th:text="${participants.size()}">150</div>
                         <div class="text-gray-600">Katılımcı</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-drivingd">
                         <div class="text-2xl font-bold text-blue-600">4</div>
                         <div class="text-gray-600">Saat</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-drivingd">
                         <div class="text-2xl font-bold text-blue-600">3</div>
                         <div class="text-gray-600">Gün Kaldı</div>
                     </div>
@@ -192,28 +207,62 @@
             <!-- Location Map -->
             <div class="bg-white rounded-lg p-6 mb-8 shadow">
                 <h2 class="text-2xl font-semibold mb-4">Konum</h2>
-                <div class="map-container" id="map">
-                    <!-- Harita buraya gelecek -->
+
+                <!-- Search Box -->
+                <div class="mb-4">
+                    <div class="flex gap-2">
+                        <input type="text"
+                               id="locationSearch"
+                               placeholder="Başlangıç konumunuzu girin..."
+                               class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <button onclick="searchLocation()"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            Ara
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">veya harita üzerine tıklayarak başlangıç noktası seçin</p>
                 </div>
+
+                <!-- Starting Location Info -->
+                <div id="startingPointInfo" class="mb-4 p-3 bg-blue-50 rounded-lg hidden">
+                    <p class="font-semibold">Başlangıç Noktası:</p>
+                    <p id="startingPointAddress" class="text-gray-600"></p>
+                </div>
+
+
+                <!-- Map container -->
+                <div id="map" style="height: 400px; width: 100%;"></div>
+
+
+                <!-- Route info -->
+                <div id="routeInfo" class="mt-2 p-3 bg-blue-50 rounded-lg hidden">
+                    <p class="font-semibold">Rota Bilgileri:</p>
+                    <p>Mesafe: <span id="routeDistance">-</span></p>
+                    <p>Tahmini Süre: <span id="routeDuration">-</span></p>
+                </div>
+
+                <!-- Route Planning Buttons -->
                 <div class="mt-4">
                     <h3 class="font-semibold mb-2">Rota Planla</h3>
                     <div class="flex gap-4">
-                        <button class="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <button id="drivingButton"
+                                class="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg active">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16.5c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5.448-1.5 1-1.5 1 .672 1 1.5zm8 0c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5.448-1.5 1-1.5 1 .672 1 1.5zM3.5 12h17M20 12l-2-6H6L4 12M2 12h20v4H2v-4z"/>
                             </svg>
                             Arabayla
                         </button>
-                        <button class="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <button id="bikeButton"
+                                class="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16.5c0 1.38-1.12 2.5-2.5 2.5S12 17.88 12 16.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5zm-11 0c0 1.38-1.12 2.5-2.5 2.5S1 17.88 1 16.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5zM12 8V6m-1 2l-3 6.5m11-6.5l-3 6.5M6 9h12"/>
                             </svg>
-                            Toplu Taşıma
+                            Bisikletle
                         </button>
-                        <button class="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <button id="footButton"
+                                class="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14h.01M16 15v-3M8 21l4-7m4 7l-4-7"/>
                             </svg>
                             Yürüyerek
                         </button>
@@ -496,6 +545,397 @@
             }
         });
     }
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script th:inline="javascript">
+    let map, startMarker, endMarker, routeLayer;
+    let startPoint = null;
+    let currentEventMarker = null;
+    let otherEventMarkers = {};
+
+    // Thymeleaf'ten verileri al
+    const eventLocation = /*[[${location}]]*/ { latitude: 0, longitude: 0 };
+    const eventName = /*[[${event.name}]]*/ 'Event';
+    const otherEvents = /*[[${otherEventLocations}]]*/ [];
+    const eventId = /*[[${event.id}]]*/ 0;
+
+    const currentEventIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        shadowSize: [41, 41]
+    });
+
+    const otherEventIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        shadowSize: [41, 41]
+    });
+
+    const startIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        shadowSize: [41, 41]
+    });
+
+    function initMap() {
+        // Harita başlangıç ayarları
+        map = L.map('map').setView([eventLocation.latitude, eventLocation.longitude], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Mevcut etkinlik marker'ı
+        currentEventMarker = L.marker([eventLocation.latitude, eventLocation.longitude], {
+            icon: currentEventIcon
+        })
+            .addTo(map)
+            .bindPopup(`
+        <b>${eventName}</b><br>
+        Mevcut Etkinlik<br>
+        <button onclick="setDestination(${eventLocation.latitude}, ${eventLocation.longitude}, '${eventName}')"
+                class="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm">
+            Buraya Git
+        </button>
+    `);
+
+
+        // Diğer etkinliklerin marker'larını ekle
+        otherEvents.forEach(event => {
+            const popupContent = `
+            <b>${event.name}</b><br>
+            <button onclick="setDestination(${event.latitude}, ${event.longitude}, '${event.name}')"
+                    class="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm">
+                Buraya Git
+            </button>
+        `;
+
+            // Aynı konumda birden fazla etkinlik için offset hesapla
+            const key = `${event.latitude},${event.longitude}`;
+            if (!otherEventMarkers[key]) {
+                otherEventMarkers[key] = [];
+            }
+
+            const offset = otherEventMarkers[key].length * 0.0001; // Marker'lar arası mesafe
+            const marker = L.marker([event.latitude + offset, event.longitude + offset], {
+                icon: otherEventIcon
+            })
+                .addTo(map)
+                .bindPopup(popupContent);
+
+            otherEventMarkers[key].push(marker);
+        });
+
+        // Haritaya tıklama olayını dinle
+        map.on('click', function(e) {
+            setStartingPoint(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Arama kutusu için geocoder ekle
+        const searchControl = L.Control.geocoder({
+            defaultMarkGeocode: false,
+            geocoder: L.Control.Geocoder.nominatim({
+                geocodingQueryParams: {
+                    countrycodes: 'tr',
+                    limit: 5
+                }
+            })
+        })
+            .on('markgeocode', function(e) {
+                const latlng = e.geocode.center;
+                setStartingPoint(latlng.lat, latlng.lng, e.geocode.name);
+                map.setView(latlng, 13);
+            })
+            .addTo(map);
+    }
+
+    function setStartingPoint(lat, lng, address = null) {
+        // Varsa eski marker'ı kaldır
+        if (startMarker) {
+            map.removeLayer(startMarker);
+        }
+
+        // Yeni başlangıç marker'ı ekle
+        startMarker = L.marker([lat, lng], {
+            draggable: true,
+            icon: startIcon  // Yeşil ikon kullan
+        }).addTo(map);
+
+        startPoint = [lat, lng];
+
+        // Marker sürüklendiğinde konumu güncelle
+        startMarker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            setStartingPoint(pos.lat, pos.lng);
+        });
+
+        // Başlangıç noktası bilgisini göster
+        const startingPointInfo = document.getElementById('startingPointInfo');
+        const startingPointAddress = document.getElementById('startingPointAddress');
+
+        startingPointInfo.classList.remove('hidden');
+
+        if (address) {
+            startingPointAddress.textContent = address;
+        } else {
+            reverseGeocode(lat, lng);
+        }
+
+        enableRouteButtons();
+    }
+
+    function setDestination(lat, lng, name) {
+        if (routeLayer) {
+            map.removeLayer(routeLayer);
+        }
+
+        // Varış noktası koordinatlarını kaydet
+        endMarker = [lng, lat];
+
+        if (startPoint) {
+            // Tüm ulaşım modu butonlarını seç
+            const transportButtons = document.querySelectorAll('#drivingButton, #bikeButton, #footButton');
+
+            // Aktif butonu bul
+            const activeButton = Array.from(transportButtons).find(button =>
+                button.classList.contains('active')
+            );
+
+
+            const activeMode = activeButton
+                ? activeButton.id.replace('Button', '')
+                : 'driving';
+
+            calculateRoute(activeMode);
+        }else {
+            alert('Lütfen önce başlangıç noktası seçin');
+        }
+    }
+
+    // Ulaşım modu butonlarını güncelle
+    document.getElementById('drivingButton').addEventListener('click', function() {
+        setActiveButton(this);
+        if (startPoint && endMarker) calculateRoute('driving');
+    });
+
+    document.getElementById('bikeButton').addEventListener('click', function() {
+        setActiveButton(this);
+        if (startPoint && endMarker) calculateRoute('bike');
+    });
+
+    document.getElementById('footButton').addEventListener('click', function() {
+        setActiveButton(this);
+        if (startPoint && endMarker) calculateRoute('foot');
+    });
+
+    function setActiveButton(button) {
+        // Tüm butonlardan aktif sınıfı ve stilleri kaldır
+        const allButtons = document.querySelectorAll('#drivingButton, #bikeButton, #footButton');
+
+        allButtons.forEach(btn => {
+            btn.classList.remove('active');
+            btn.classList.remove('bg-blue-500');
+            btn.classList.remove('text-white');
+            btn.classList.add('bg-blue-50');
+            btn.classList.add('text-blue-600');
+        });
+
+        // Seçilen butonu aktif yap
+        button.classList.add('active');
+        button.classList.remove('bg-blue-50');
+        button.classList.remove('text-blue-600');
+        button.classList.add('bg-blue-500');
+        button.classList.add('text-white');
+    }
+
+    document.getElementById('locationSearch').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchLocation();
+        }
+    });
+    function searchLocation() {
+        const searchInput = document.getElementById('locationSearch');
+        const searchText = searchInput.value.trim();
+
+        if (!searchText) return;
+
+        // Nominatim API'si ile arama yap
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchText)}&countrycodes=tr&limit=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const location = data[0];
+                    setStartingPoint(
+                        parseFloat(location.lat),
+                        parseFloat(location.lon),
+                        location.display_name
+                    );
+                    map.setView([location.lat, location.lon], 13);
+                } else {
+                    alert('Konum bulunamadı');
+                }
+            })
+            .catch(error => {
+                console.error('Arama hatası:', error);
+                alert('Arama sırasında bir hata oluştu');
+            });
+    }
+
+    function reverseGeocode(lat, lng) {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    document.getElementById('startingPointAddress').textContent = data.display_name;
+                }
+            })
+            .catch(error => {
+                console.error('Reverse geocoding hatası:', error);
+                document.getElementById('startingPointAddress').textContent = `${lat}, ${lng}`;
+            });
+    }
+
+    function calculateRoute(mode) {
+        if (!startPoint || !endMarker) {
+            alert('Lütfen başlangıç ve varış noktalarını seçin');
+            return;
+        }
+
+        const modeConfig = {
+            car: {
+                profile: 'driving-car',
+                color: '#3388ff',
+                weight: 6,
+                opacity: 0.8,
+                dashArray: null
+            },
+            bike: {
+                profile: 'cycling-regular',
+                color: '#33cc33',
+                weight: 5,
+                opacity: 0.8,
+                dashArray: '12, 8'
+            },
+            foot: {
+                profile: 'foot-walking',
+                color: '#ff3333',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '8, 8'
+            }
+        };
+
+        const config = modeConfig[mode] || modeConfig.car;
+        const baseUrl = 'https://api.openrouteservice.org/v2/directions';
+        const apiKey = '5b3ce3597851110001cf624862745c92428f4b5b915aa478e6cd612c';
+
+        const url = `${baseUrl}/${config.profile}/geojson`;
+
+        const body = {
+            coordinates: [
+                [startPoint[1], startPoint[0]],
+                [endMarker[0], endMarker[1]]
+            ],
+            language: 'tr'
+        };
+
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': apiKey
+            },
+            body: JSON.stringify(body)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.features && data.features.length > 0) {
+                    if (routeLayer) {
+                        map.removeLayer(routeLayer);
+                    }
+
+                    routeLayer = L.geoJSON(data.features[0], {
+                        style: {
+                            color: config.color,
+                            weight: config.weight,
+                            opacity: config.opacity,
+                            dashArray: config.dashArray,
+                            lineCap: 'round',
+                            lineJoin: 'round'
+                        }
+                    }).addTo(map);
+
+                    const properties = data.features[0].properties;
+                    updateRouteInfo({
+                        distance: properties.segments[0].distance,
+                        duration: properties.segments[0].duration
+                    }, mode);
+
+                    map.fitBounds(routeLayer.getBounds(), {
+                        padding: [50, 50]
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Rota hesaplama hatası:', error);
+                alert('Rota hesaplanırken bir hata oluştu');
+            });
+    }
+
+
+    function enableRouteButtons() {
+        document.getElementById('drivingButton').disabled = false;
+        document.getElementById('bikeButton').disabled = false;
+        document.getElementById('footButton').disabled = false;
+    }
+    function updateRouteInfo(route, mode) {
+        const distance = (route.distance / 1000).toFixed(1);
+        let duration = route.duration / 60;
+
+        let modeText;
+        switch(mode) {
+            case 'driving':
+                modeText = 'Arabayla';
+                break;
+            case 'bike':
+                modeText = 'Bisikletle';
+                break;
+            case 'foot':
+                modeText = 'Yürüyerek';
+                break;
+            default:
+                modeText = '';
+        }
+
+        let durationText;
+        if (duration > 60) {
+            const hours = Math.floor(duration / 60);
+            const minutes = Math.round(duration % 60);
+            durationText = `${hours} saat ${minutes} dakika`;
+        } else {
+            durationText = `${Math.round(duration)} dakika`;
+        }
+
+        document.getElementById('routeInfo').classList.remove('hidden');
+        document.getElementById('routeDistance').textContent = `${distance} km`;
+        document.getElementById('routeDuration').textContent = `${modeText} ${durationText}`;
+
+
+    }
+
+
+    document.addEventListener('DOMContentLoaded', initMap);
 </script>
 </body>
 </html>

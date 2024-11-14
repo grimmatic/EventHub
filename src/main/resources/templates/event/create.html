@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Etkinlik Oluştur - EventHub</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
     <style>
         body {
             background-color: #f3f4f6;
@@ -79,6 +84,31 @@
         .date-warning.show {
             display: block;
         }
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            z-index: 1;
+        }
+
+        .location-info {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .location-info p {
+            margin: 0.5rem 0;
+            color: #475569;
+        }
+
+        .location-info .coordinates {
+            font-family: monospace;
+            color: #64748b;
+        }
     </style>
 </head>
 <body>
@@ -138,22 +168,40 @@
                 </div>
             </div>
 
-            <!-- Konum -->
+            <!-- Konum Bölümü -->
             <div class="form-section">
                 <h2 class="text-lg font-semibold mb-4">Konum</h2>
 
                 <div class="form-group">
-                    <label class="form-label" for="location">Adres*</label>
-                    <input type="text" id="location" name="location" class="form-input" required
-                           placeholder="Etkinlik konumunun tam adresi">
+                    <label class="form-label" for="locationSearch">Adres Ara</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="locationSearch" class="form-input flex-1"
+                               placeholder="Adres veya konum ara...">
+                        <button type="button" onclick="searchLocation()"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            Ara
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">veya haritadan konum seçin</p>
                 </div>
 
-                <div class="location-preview" id="locationPreview">
-                    <!-- Harita buraya gelecek -->
+                <!-- Harita -->
+                <div id="map"></div>
+
+                <!-- Konum Bilgileri -->
+                <div id="locationInfo" class="location-info hidden">
+                    <h3 class="font-semibold text-gray-900">Seçilen Konum</h3>
+                    <p id="selectedAddress">-</p>
+                    <p class="coordinates" id="selectedCoordinates">-</p>
                 </div>
+
+                <!-- Gizli input'lar -->
+                <input type="hidden" id="location" name="location" required>
+                <input type="hidden" id="latitude" name="latitude" required>
+                <input type="hidden" id="longitude" name="longitude" required>
             </div>
 
-            <!-- Gönder -->
+            <!-- Form gönderme butonları -->
             <div class="flex justify-between items-center">
                 <button type="button" onclick="history.back()"
                         class="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition">
@@ -170,6 +218,7 @@
 </div>
 
 <script>
+    let map, marker;
     // Tarih kontrolleri
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
@@ -223,6 +272,113 @@
         // Form submission
         this.submit();
     });
+
+
+    function initMap() {
+        // İstanbul merkezi koordinatları
+        const defaultLocation = [41.0082, 28.9784];
+
+        map = L.map('map').setView(defaultLocation, 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Haritaya tıklama olayı
+        map.on('click', function(e) {
+            setLocation(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Arama kontrolü ekle
+        L.Control.geocoder({
+            defaultMarkGeocode: false
+        })
+            .on('markgeocode', function(e) {
+                const latlng = e.geocode.center;
+                setLocation(latlng.lat, latlng.lng);
+                map.setView(latlng, 16);
+            })
+            .addTo(map);
+    }
+
+    // Konum ayarlama fonksiyonu
+    function setLocation(lat, lng) {
+        // Varsa eski marker'ı kaldır
+        if (marker) {
+            map.removeLayer(marker);
+        }
+
+        // Yeni marker ekle
+        marker = L.marker([lat, lng], {
+            draggable: true
+        }).addTo(map);
+
+        // Marker sürüklendiğinde konumu güncelle
+        marker.on('dragend', function(e) {
+            const position = e.target.getLatLng();
+            setLocation(position.lat, position.lng);
+        });
+
+        // Koordinatları kaydet
+        document.getElementById('latitude').value = parseFloat(lat.toFixed(6));
+        document.getElementById('longitude').value = parseFloat(lng.toFixed(6));
+
+        // Adres bilgisini al
+        reverseGeocode(lat, lng);
+    }
+
+    // Adres arama fonksiyonu
+    function searchLocation() {
+        const searchInput = document.getElementById('locationSearch');
+        const searchText = searchInput.value.trim();
+
+        if (!searchText) return;
+
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchText)}&limit=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const location = data[0];
+                    setLocation(parseFloat(location.lat), parseFloat(location.lon));
+                    map.setView([location.lat, location.lon], 16);
+                } else {
+                    alert('Konum bulunamadı');
+                }
+            })
+            .catch(error => {
+                console.error('Arama hatası:', error);
+                alert('Arama sırasında bir hata oluştu');
+            });
+    }
+
+    // Reverse geocoding fonksiyonu
+    function reverseGeocode(lat, lng) {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    document.getElementById('locationInfo').classList.remove('hidden');
+                    document.getElementById('selectedAddress').textContent = data.display_name;
+                    document.getElementById('selectedCoordinates').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    document.getElementById('location').value = data.display_name;
+                }
+            })
+            .catch(error => {
+                console.error('Reverse geocoding hatası:', error);
+                document.getElementById('selectedAddress').textContent = 'Adres alınamadı';
+            });
+    }
+
+    // Enter tuşu ile arama
+    document.getElementById('locationSearch').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchLocation();
+        }
+    });
+
+    // Haritayı başlat
+    document.addEventListener('DOMContentLoaded', initMap);
 </script>
 </body>
 </html>

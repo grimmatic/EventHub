@@ -2,6 +2,7 @@ package com.eventhub.eventhub.controller;
 
 import com.eventhub.eventhub.entity.Event;
 import com.eventhub.eventhub.entity.User;
+import com.eventhub.eventhub.model.Location;
 import com.eventhub.eventhub.service.EventService;
 import com.eventhub.eventhub.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.eventhub.eventhub.service.LocationService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,6 +24,8 @@ import java.util.Map;
 public class EventController {
     private final EventService eventService;
     private final UserService userService;
+    private final LocationService locationService;
+
 
     @GetMapping("/etkinlikler")
     public String listEvents(
@@ -94,10 +98,14 @@ public class EventController {
         return "event/create";
     }
 
-    // Etkinlik oluşturma işlemi
     @PostMapping("/create")
-    public String createEvent(@ModelAttribute Event event, RedirectAttributes redirectAttributes) {
+    public String createEvent(@ModelAttribute Event event,
+                              @RequestParam("latitude") Double latitude,
+                              @RequestParam("longitude") Double longitude,
+                              RedirectAttributes redirectAttributes) {
         try {
+            event.setLatitude(latitude);
+            event.setLongitude(longitude);
             eventService.createEvent(event);
             redirectAttributes.addFlashAttribute("success", "Etkinlik başarıyla oluşturuldu! Onay için bekleyiniz.");
             return "redirect:/event/etkinlikler";
@@ -117,10 +125,19 @@ public class EventController {
             List<Event> similarEvents = eventService.getSimilarEvents(id);
             List<User> participants = eventService.getEventParticipants(id);
 
+            // Location bilgisini al
+            Location location = locationService.getLocationFromAddress(event);
+            model.addAttribute("location", location);
+
+            // Diğer etkinliklerin konumlarını al
+            List<Map<String, Object>> otherEventLocations = locationService.getOtherEventLocations(id);
+            model.addAttribute("otherEventLocations", otherEventLocations);
+
             model.addAttribute("event", event);
             model.addAttribute("isParticipant", isParticipant);
             model.addAttribute("similarEvents", similarEvents);
             model.addAttribute("participants", participants);
+
 
             return "event/detail";
         } catch (Exception e) {
