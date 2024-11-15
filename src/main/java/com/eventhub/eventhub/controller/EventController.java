@@ -30,7 +30,7 @@ public class EventController {
     @GetMapping("/etkinlikler")
     public String listEvents(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false) List<String> category,
             @RequestParam(required = false) String dateFilter,
             @RequestParam(required = false) String specificDate,
             @RequestParam(defaultValue = "0") int page,
@@ -39,50 +39,46 @@ public class EventController {
         int pageSize = 6;
         Page<Event> eventPage;
 
-        // Arama kontrolü
+        // Tarih aralığını hesapla
+        LocalDateTime startDate = null;
+        LocalDateTime endDate = LocalDateTime.now().plusYears(100);
+
+        if (specificDate != null && !specificDate.isEmpty()) {
+            startDate = LocalDate.parse(specificDate).atStartOfDay();
+            endDate = startDate.plusDays(1);
+        } else if (dateFilter != null) {
+            switch (dateFilter) {
+                case "today":
+                    startDate = LocalDate.now().atStartOfDay();
+                    endDate = startDate.plusDays(1);
+                    break;
+                case "week":
+                    startDate = LocalDate.now().atStartOfDay();
+                    endDate = startDate.plusWeeks(1);
+                    break;
+                case "month":
+                    startDate = LocalDate.now().atStartOfDay();
+                    endDate = startDate.plusMonths(1);
+                    break;
+                case "all":
+                    startDate = LocalDateTime.of(1970, 1, 1, 0, 0);
+                    break;
+            }
+        }
+
+        // Filtreleme mantığı
         if (keyword != null && !keyword.isEmpty()) {
             eventPage = eventService.searchEvents(keyword, page, pageSize);
-        }
-        // Kategori kontrolü
-        else if (category != null && !category.isEmpty()) {
-            eventPage = eventService.getEventsByCategory(category, page, pageSize);
-        }
-        // Tarih filtresi kontrolü
-        else if (dateFilter != null || (specificDate != null && !specificDate.isEmpty())) {
-            LocalDateTime startDate = null;
-            LocalDateTime endDate = LocalDateTime.now().plusYears(100); // Gelecekteki bir tarih
-
-            if (specificDate != null && !specificDate.isEmpty()) {
-                startDate = LocalDate.parse(specificDate).atStartOfDay();
-                endDate = startDate.plusDays(1);
-            } else {
-                switch (dateFilter) {
-                    case "today":
-                        startDate = LocalDate.now().atStartOfDay();
-                        endDate = startDate.plusDays(1);
-                        break;
-                    case "week":
-                        startDate = LocalDate.now().atStartOfDay();
-                        endDate = startDate.plusWeeks(1);
-                        break;
-                    case "month":
-                        startDate = LocalDate.now().atStartOfDay();
-                        endDate = startDate.plusMonths(1);
-                        break;
-                }
-            }
-            eventPage = eventService.getEventsByDateRange(startDate, endDate, page, pageSize);
-        }
-        // Filtre yoksa tüm etkinlikleri getir
-        else {
-            eventPage = eventService.getAllEventsPaged(page, pageSize);
+        } else {
+            // Kategori ve tarih filtrelerini birlikte kullan
+            eventPage = eventService.getFilteredEvents(category, startDate, endDate, page, pageSize);
         }
 
         model.addAttribute("events", eventPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", eventPage.getTotalPages());
         model.addAttribute("categories", eventService.getAllCategories());
-        model.addAttribute("selectedCategory", category);
+        model.addAttribute("selectedCategories", category);
         model.addAttribute("selectedDateFilter", dateFilter);
         model.addAttribute("specificDate", specificDate);
         model.addAttribute("keyword", keyword);
@@ -93,8 +89,8 @@ public class EventController {
     // Etkinlik oluşturma sayfası
     @GetMapping("/create")
     public String showCreateForm(Model model) {
-        List<String> categories = eventService.getAllCategories();
-        model.addAttribute("categories", categories);
+        List<String> category = eventService.getAllCategories();
+        model.addAttribute("categories", category);
         return "event/create";
     }
 
@@ -196,11 +192,10 @@ public class EventController {
                                @RequestParam(required = false) String category,
                                @RequestParam(required = false) String location,
                                Model model) {
-        List<Event> events = eventService.searchEvents(keyword, category, location);
-        List<String> categories = eventService.getAllCategories();
+        List<Event> events = eventService.searchEvents(keyword, category, location);;
 
         model.addAttribute("events", events);
-        model.addAttribute("categories", categories);
+        model.addAttribute("categories", category);
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedCategory", category);
         model.addAttribute("selectedLocation", location);

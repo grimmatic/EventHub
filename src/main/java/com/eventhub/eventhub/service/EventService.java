@@ -169,8 +169,31 @@ public class EventService {
                 .limit(3)
                 .collect(Collectors.toList());
     }
+    public Page<Event> getFilteredEvents(List<String> categories, LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
 
+        if (categories != null && !categories.isEmpty()) {
+            if (startDate != null) {
+                // Hem kategori hem de tarih filtresi var
+                return eventRepository.findByApprovedIsTrueAndCategoryInAndStartDateBetween(
+                        categories, startDate, endDate, pageable);
+            } else {
+                // Sadece kategori filtresi var
+                return eventRepository.findByApprovedIsTrueAndCategoryIn(categories, pageable);
+            }
+        } else if (startDate != null) {
+            // Sadece tarih filtresi var
+            return eventRepository.findByApprovedIsTrueAndStartDateBetween(startDate, endDate, pageable);
+        } else {
+            // Hiç filtre yok
+            return eventRepository.findByApprovedIsTrue(pageable);
+        }
+    }
 
+    public Page<Event> getEventsByCategories(List<String> categories, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return eventRepository.findByApprovedIsTrueAndCategoryIn(categories, pageable);
+    }
 
     public List<Event> searchEvents(String keyword, String category, String location) {
         if (keyword == null && category == null && location == null) {
@@ -210,7 +233,6 @@ public class EventService {
         return eventRepository.countByApprovedIsTrue();
 
     }
-
 
     public List<String> getAllCategories() {
         return List.of("Müzik", "Spor", "Teknoloji", "Sanat", "Bilim", "Yemek" ,"Seyahat", "Edebiyat");

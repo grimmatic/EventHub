@@ -38,6 +38,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Page<Event> findByApprovedIsTrue(Pageable pageable);
     Page<Event> findByApprovedIsTrueAndCategory(String category, Pageable pageable);
     Page<Event> findByApprovedIsTrueAndStartDateBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
-    Page<Event> findByApprovedIsTrueAndNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
-            String nameKeyword, String descriptionKeyword, Pageable pageable);
+    Page<Event> findByApprovedIsTrueAndNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String nameKeyword, String descriptionKeyword, Pageable pageable);
+    Page<Event> findByApprovedIsTrueAndCategoryIn(List<String> categories, Pageable pageable);
+    Page<Event> findByApprovedIsTrueAndCategoryInAndStartDateBetween(List<String> categories, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable
+    );
 }

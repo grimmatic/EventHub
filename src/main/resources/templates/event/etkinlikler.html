@@ -12,13 +12,6 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .page-header {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            padding: 4rem 0;
-            color: white;
-            margin-bottom: 2rem;
-        }
-
         .main-layout {
             display: grid;
             grid-template-columns: 280px 1fr;
@@ -55,7 +48,7 @@
 
         .events-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
             gap: 1.5rem;
             width: 100%;
         }
@@ -71,8 +64,8 @@
         }
 
         .event-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
         .page-button.disabled {
@@ -85,11 +78,6 @@
             width: 100%;
             height: 200px;
             object-fit: cover;
-        }
-
-        .search-bar {
-            position: relative;
-            margin-bottom: 2rem;
         }
 
         .search-bar input {
@@ -105,14 +93,6 @@
         .search-bar input:focus {
             border-color: #3b82f6;
             outline: none;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6b7280;
         }
 
         .pagination {
@@ -158,6 +138,64 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .category-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .category-badge:hover {
+            transform: scale(1.05);
+        }
+
+
+        .category-müzik {
+            background: #fae8ff;
+            color: #86198f;
+        }
+
+
+        .category-spor {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+
+        .category-teknoloji {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .category-sanat {
+            background: #fce7f3;
+            color: #9d174d;
+        }
+
+
+        .category-bilim {
+            background: #cffafe;
+            color: #155e75;
+        }
+
+
+        .category-yemek {
+            background: #ffedd5;
+            color: #9a3412;
+        }
+
+
+        .category-seyahat {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .category-edebiyat {
+            background: #fef3c7;
+            color: #92400e;
+        }
     </style>
 </head>
 <body>
@@ -196,10 +234,10 @@
                 <th:block th:each="category : ${categories}">
                     <label class="flex items-center">
                         <input type="checkbox"
-                               th:checked="${selectedCategory == category}"
-                               onclick="filterByCategory(this.value)"
+                               th:checked="${selectedCategories != null and selectedCategories.contains(category)}"
                                class="form-checkbox h-4 w-4 text-blue-600"
-                               th:value="${category}">
+                               th:value="${category}"
+                               onchange="filterByCategories()">
                         <span class="ml-2" th:text="${category}">Kategori</span>
                     </label>
                 </th:block>
@@ -237,6 +275,15 @@
                            class="form-radio h-4 w-4 text-blue-600">
                     <span class="ml-2">Bu Ay</span>
                 </label>
+                <label class="flex items-center">
+                    <input type="radio"
+                           name="dateFilter"
+                           value="all"
+                           th:checked="${selectedDateFilter == 'all'}"
+                           onchange="filterByDateOption(this.value)"
+                           class="form-radio h-4 w-4 text-blue-600">
+                    <span class="ml-2">Tümü</span>
+                </label>
             </div>
 
             <div class="mt-4">
@@ -259,7 +306,7 @@
     <!-- Events Section -->
     <div class="events-container">
         <div class="events-grid">
-            <div th:each="event : ${events}" class="event-card">
+            <div th:each="event : ${events}" class="event-card"   th:onclick="'window.location.href=\'/event/' + ${event.id} + '\''">
                 <img th:src="@{'/images/categories/' + ${event.category.toLowerCase()} + '.jpg'}"
                      th:alt="${event.category}"
                      class="event-image">
@@ -271,7 +318,7 @@
                             <p class="text-gray-600"
                                th:text="${#temporals.format(event.startDate, 'dd MMMM yyyy, HH:mm')}">Date</p>
                         </div>
-                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded"
+                        <span th:class="|category-badge category-${#strings.toLowerCase(event.category)}|"
                               th:text="${event.category}">Category</span>
                     </div>
                     <p class="text-gray-600 mb-4 flex-1" th:text="${event.description}">Description</p>
@@ -343,6 +390,31 @@
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const allRadio = document.querySelector('input[value="all"]');
+        if (allRadio && !document.querySelector('input[name="dateFilter"]:checked')) {
+            allRadio.checked = true;
+        }
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedDateFilter = urlParams.get('dateFilter');
+        if (selectedDateFilter) {
+            const radio = document.querySelector(`input[name="dateFilter"][value="${selectedDateFilter}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        const urlParams1 = new URLSearchParams(window.location.search);
+        const selectedCategory = urlParams1.get('category');
+        const selectedDate = urlParams1.get('startDate');
+
+        if (selectedCategory) {
+            const checkbox = document.querySelector(`input[value="${selectedCategory}"]`);
+            if (checkbox) checkbox.checked = true;
+        }
+
+        if (selectedDate) {
+            const dateInput = document.querySelector('input[type="date"]');
+            if (dateInput) dateInput.value = selectedDate;
+        }
+
         // Arama fonksiyonu
         const searchInput = document.querySelector('.search-bar input');
         searchInput.addEventListener('input', function(e) {
@@ -353,9 +425,7 @@
         // Kategori filtreleme
         const categoryCheckboxes = document.querySelectorAll('input[type="checkbox"]');
         categoryCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                // Burada kategori filtreleme işlemleri yapılacak
-            });
+            checkbox.addEventListener('change', filterByCategories);
         });
 
         // Sayfalama işlemleri
@@ -385,29 +455,29 @@
                 filterSection.style.top = '2rem';
             }
         });
+
+
     });
-    function filterByCategory(category) {
-        window.location.href = `/event/etkinlikler?category=${encodeURIComponent(category)}`;
-    }
+
 
     function clearFilters() {
+        // Uncheck all checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+        // Reset date filters
+        document.querySelectorAll('input[name="dateFilter"]').forEach(radio => radio.checked = false);
+        document.querySelector('input[value="all"]').checked = true;
+
+        // Reset date input
+        document.querySelector('input[type="date"]').value = '';
+
+        // Reset search input
+        document.getElementById('searchInput').value = '';
+
+        // Redirect to base URL
         window.location.href = '/event/etkinlikler';
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const selectedCategory = urlParams.get('category');
-        const selectedDate = urlParams.get('startDate');
 
-        if (selectedCategory) {
-            const checkbox = document.querySelector(`input[value="${selectedCategory}"]`);
-            if (checkbox) checkbox.checked = true;
-        }
-
-        if (selectedDate) {
-            const dateInput = document.querySelector('input[type="date"]');
-            if (dateInput) dateInput.value = selectedDate;
-        }
-    });
     function search() {
         const keyword = document.getElementById('searchInput').value;
         if (keyword.trim()) {
@@ -420,14 +490,70 @@
         }
     });
     function filterByDateOption(dateFilter) {
-        window.location.href = `/event/etkinlikler?dateFilter=${encodeURIComponent(dateFilter)}`;
+        let url = new URL(window.location.href);
+        url.searchParams.set('dateFilter', dateFilter);
+        url.searchParams.delete('specificDate'); // Özel tarihi temizle
+
+        // Mevcut kategori filtrelerini koru
+        const categories = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+            .map(cb => cb.value);
+
+        url.searchParams.delete('category');
+        categories.forEach(category => {
+            url.searchParams.append('category', category);
+        });
+
+        window.location.href = url.toString();
     }
 
     function filterBySpecificDate(date) {
         if (date) {
-            window.location.href = `/event/etkinlikler?specificDate=${encodeURIComponent(date)}`;
+            let url = new URL(window.location.href);
+            url.searchParams.set('specificDate', date);
+            url.searchParams.delete('dateFilter'); // Tarih filtresini temizle
+
+            // Mevcut kategori filtrelerini koru
+            const categories = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => cb.value);
+
+            url.searchParams.delete('category');
+            categories.forEach(category => {
+                url.searchParams.append('category', category);
+            });
+
+            window.location.href = url.toString();
+        }}
+    function filterByCategories() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        const selectedCategories = Array.from(checkboxes).map(cb => cb.value);
+
+        let url = new URL(window.location.href);
+
+        // Mevcut category parametrelerini temizle
+        url.searchParams.delete('category');
+
+        // Her seçili kategori için yeni bir category parametresi ekle
+        if (selectedCategories.length > 0) {
+            selectedCategories.forEach(category => {
+                url.searchParams.append('category', category);
+            });
         }
+
+        // Mevcut tarih filtrelerini koru
+        const dateFilter = url.searchParams.get('dateFilter');
+        const specificDate = url.searchParams.get('specificDate');
+
+        if (dateFilter) {
+            url.searchParams.set('dateFilter', dateFilter);
+        }
+        if (specificDate) {
+            url.searchParams.set('specificDate', specificDate);
+        }
+
+        window.location.href = url.toString();
     }
+
+
 </script>
 </body>
 </html>
