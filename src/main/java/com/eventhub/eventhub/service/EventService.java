@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,11 +42,7 @@ public class EventService {
         event.setCreator(creator);
 
         // Admin otomatik onay kontrolü
-        if (creator.getRole() == UserRole.ROLE_ADMIN) {
-            event.setApproved(true);
-        } else {
-            event.setApproved(false);
-        }
+        event.setApproved(creator.getRole() == UserRole.ROLE_ADMIN);
 
         if (hasDateConflict(event.getStartDate(), event.getEndDate())) {
             throw new RuntimeException("Bu tarihte başka bir etkinliğiniz bulunmaktadır.");
@@ -73,16 +69,6 @@ public class EventService {
         return eventRepository.findByApprovedIsFalseOrApprovedIsNull();
 
     }
-    public Page<Event> getEventsByCategory(String category, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return eventRepository.findByApprovedIsTrueAndCategory(category, pageable);
-    }
-    public Page<Event> getEventsByDate(LocalDate date, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-        return eventRepository.findByApprovedIsTrueAndStartDateBetween(startOfDay, endOfDay, pageable);
-    }
 
     public Page<Event> searchEvents(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -90,10 +76,6 @@ public class EventService {
                 keyword, keyword, pageable);
     }
 
-    public Page<Event> getEventsByDateRange(LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return eventRepository.findByApprovedIsTrueAndStartDateBetween(startDate, endDate, pageable);
-    }
 
     @Transactional
     public void joinEvent(Long eventId) {
@@ -121,7 +103,6 @@ public class EventService {
     @Transactional
     public void leaveEvent(Long eventId) {
         User currentUser = userService.getCurrentUser();
-        Event event = getEventById(eventId);
 
         // Katılımcıyı etkinlikten çıkar
         participantRepository.deleteByUserIdAndEventId(currentUser.getId(), eventId);
@@ -190,10 +171,6 @@ public class EventService {
         }
     }
 
-    public Page<Event> getEventsByCategories(List<String> categories, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return eventRepository.findByApprovedIsTrueAndCategoryIn(categories, pageable);
-    }
 
     public List<Event> searchEvents(String keyword, String category, String location) {
         if (keyword == null && category == null && location == null) {
@@ -244,8 +221,5 @@ public class EventService {
     public int getTotalParticipantsByOrganizer(Long organizerId) {
         return participantRepository.countParticipantsByOrganizer(organizerId);
     }
-    public Page<Event> getAllEventsPaged(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return eventRepository.findByApprovedIsTrue(pageable);
-    }
+
 }

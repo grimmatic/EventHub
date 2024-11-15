@@ -192,7 +192,7 @@ public class EventController {
                                @RequestParam(required = false) String category,
                                @RequestParam(required = false) String location,
                                Model model) {
-        List<Event> events = eventService.searchEvents(keyword, category, location);;
+        List<Event> events = eventService.searchEvents(keyword, category, location);
 
         model.addAttribute("events", events);
         model.addAttribute("categories", category);
