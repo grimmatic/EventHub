@@ -6,76 +6,560 @@
   <title>Admin Panel - EventHub</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+  <style>
+    body {
+      background-color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .admin-container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .dashboard-header {
+      background: linear-gradient(to right, #3b82f6, #2563eb);
+      padding: 2rem;
+      border-radius: 1rem;
+      color: white;
+      margin-bottom: 2rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+    }
+
+    .panel-section {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-content {
+      padding: 1.5rem;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .event-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      transition: all 0.2s;
+    }
+
+    .event-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 0.75rem;
+    }
+
+    .event-category {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      background-color: #eff6ff;
+      color: #3b82f6;
+    }
+
+    .event-date {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+
+    .event-location {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+    }
+
+    .event-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .user-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      transition: all 0.2s;
+    }
+
+    .user-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-avatar {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      margin-right: 1rem;
+      object-fit: cover;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-status {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      margin-left: auto;
+    }
+
+    .status-active {
+      background-color: #10b981;
+    }
+
+    .status-inactive {
+      background-color: #ef4444;
+    }
+
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 #f1f5f9;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-approve {
+      background-color: #10b981;
+      color: white;
+    }
+
+    .btn-approve:hover {
+      background-color: #059669;
+    }
+
+    .btn-reject {
+      background-color: #ef4444;
+      color: white;
+    }
+
+    .btn-reject:hover {
+      background-color: #dc2626;
+    }
+
+    .confirm-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-100">
+<body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<div class="container mx-auto px-4 py-8">
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- Onay Bekleyen Etkinlikler -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-xl font-bold mb-4">Onay Bekleyen Etkinlikler</h2>
-      <div class="space-y-4">
-        <div th:each="event : ${pendingEvents}" class="border rounded p-4">
-          <h3 class="font-semibold" th:text="${event.name}"></h3>
-          <p class="text-sm text-gray-600" th:text="${event.description}"></p>
-          <div class="mt-2 flex gap-2">
-            <form th:action="@{/admin/event/approve/{id}(id=${event.id})}" method="post">
-              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">Onayla</button>
-            </form>
-            <form th:action="@{/admin/event/reject/{id}(id=${event.id})}" method="post">
-              <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">Reddet</button>
+<div class="admin-container">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <h1 class="text-3xl font-bold mb-2">Admin Dashboard</h1>
+    <p class="text-blue-100">Platform yönetimi ve istatistikler</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="text-3xl font-bold" th:text="${totalUsers}">0</div>
+        <div class="text-sm text-blue-100">Toplam Kullanıcı</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-3xl font-bold" th:text="${totalEvents}">0</div>
+        <div class="text-sm text-blue-100">Toplam Etkinlik</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-3xl font-bold" th:text="${activeEvents}">0</div>
+        <div class="text-sm text-blue-100">Aktif Etkinlik</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-3xl font-bold" th:text="${pendingEvents.size()}">0</div>
+        <div class="text-sm text-blue-100">Onay Bekleyen</div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="main-content">
+
+    <div class="panel-section">
+      <div class="section-header">
+        <h2 class="text-xl font-bold">Onay Bekleyen Etkinlikler</h2>
+        <span class="text-sm text-gray-500"
+              th:text="${pendingEvents.size() + ' etkinlik'}"></span>
+      </div>
+      <div class="section-content custom-scrollbar">
+        <div th:each="event : ${pendingEvents}" class="event-card">
+          <div class="event-header">
+            <div>
+              <h3 class="font-semibold" th:text="${event.name}">Event Name</h3>
+              <span class="event-category" th:text="${event.category}">Category</span>
+            </div>
+            <span class="event-date"
+                  th:text="${#temporals.format(event.startDate, 'dd MMM yyyy, HH:mm')}">
+                            Date
+                        </span>
+          </div>
+          <p class="text-gray-600 text-sm" th:text="${event.description}">Description</p>
+          <div class="event-location">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span th:text="${event.location}">Location</span>
+          </div>
+          <div class="event-actions">
+            <button onclick="showConfirmModal('approve', this.getAttribute('data-event-id'))"
+                    th:attr="data-event-id=${event.id}"
+                    class="btn btn-approve flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M5 13l4 4L19 7"/>
+              </svg>
+              Onayla
+            </button>
+            <button onclick="showConfirmModal('reject', this.getAttribute('data-event-id'))"
+                    th:attr="data-event-id=${event.id}"
+                    class="btn btn-reject flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              Reddet
+            </button>
+          </div>
+        </div>
+        <div th:if="${#lists.isEmpty(pendingEvents)}"
+             class="text-center text-gray-500 py-8">
+          Onay bekleyen etkinlik bulunmuyor.
+        </div>
+      </div>
+    </div>
+
+      <div class="panel-section mt-8">
+          <div class="section-header">
+              <h2 class="text-xl font-bold">Tüm Etkinlikler</h2>
+              <span class="text-sm text-gray-500" th:text="${allEvents.size() + ' etkinlik'}"></span>
+          </div>
+          <div class="section-content custom-scrollbar">
+              <div th:each="event : ${allEvents}" class="event-card">
+                  <div class="event-header">
+                      <div>
+                          <h3 class="font-semibold" th:text="${event.name}">Event Name</h3>
+                          <span class="event-category" th:text="${event.category}">Category</span>
+                          <span th:if="${event.approved}" class="bg-green-100 text-green-800 text-xs font-medium ml-2 px-2.5 py-0.5 rounded">Aktif</span>
+                          <span th:unless="${event.approved}" class="bg-red-100 text-red-800 text-xs font-medium ml-2 px-2.5 py-0.5 rounded">Pasif</span>
+                      </div>
+                      <span class="event-date" th:text="${#temporals.format(event.startDate, 'dd MMM yyyy, HH:mm')}">Date</span>
+                  </div>
+                  <p class="text-gray-600 text-sm" th:text="${event.description}">Description</p>
+                  <div class="event-location">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      <span th:text="${event.location}">Location</span>
+                  </div>
+                  <div class="event-actions">
+                      <button th:onclick="'toggleEventStatus(' + ${event.id} + ')'"
+                              th:class="${event.approved ? 'btn btn-reject' : 'btn btn-approve'}"
+                              class="flex items-center gap-2">
+                          <span th:text="${event.approved ? 'Pasife Al' : 'Aktif Et'}"></span>
+                      </button>
+                      <button th:onclick="'deleteEvent(' + ${event.id} + ')'"
+                              class="btn bg-gray-500 text-white hover:bg-gray-600 flex items-center gap-2">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                          </svg>
+                          Sil
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+    <!-- Users Section -->
+    <div class="panel-section">
+      <div class="section-header">
+        <h2 class="text-xl font-bold">Kullanıcı Yönetimi</h2>
+        <span class="text-sm text-gray-500"
+              th:text="${users.size() + ' kullanıcı'}"></span>
+      </div>
+      <div class="section-content custom-scrollbar">
+        <div class="user-list">
+          <div th:each="user : ${users}" class="user-card">
+            <img th:src="${user.profileImageUrl != null ? user.profileImageUrl : '/images/default-avatar.png'}"
+                 alt="User Avatar" class="user-avatar">
+            <div class="user-info">
+              <div class="font-semibold"
+                   th:text="${user.firstName + ' ' + user.lastName}">
+                User Name
+              </div>
+              <div class="text-sm text-gray-500" th:text="${user.email}">
+                Email
+              </div>
+              <div class="text-xs text-gray-400" th:text="${user.role}">
+                Role
+              </div>
+            </div>
+            <form th:action="@{/admin/user/toggle-status/{id}(id=${user.id})}"
+                  method="post" class="ml-4">
+              <button type="submit"
+                      class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      th:classappend="${user.enabled ? 'bg-green-500' : 'bg-gray-200'}"
+                      role="switch">
+                <span class="sr-only">Toggle user status</span>
+                <span aria-hidden="true"
+                      class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                      th:classappend="${user.enabled ? 'translate-x-5' : 'translate-x-0'}">
+                                </span>
+              </button>
             </form>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Kullanıcı Yönetimi -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-xl font-bold mb-4">Kullanıcı Yönetimi</h2>
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-          <tr>
-            <th class="text-left">Kullanıcı Adı</th>
-            <th class="text-left">E-posta</th>
-            <th class="text-left">Rol</th>
-            <th class="text-left">İşlemler</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr th:each="user : ${users}">
-            <td th:text="${user.username}"></td>
-            <td th:text="${user.email}"></td>
-            <td th:text="${user.role}"></td>
-            <td>
-              <form th:action="@{/admin/user/toggle-status/{id}(id=${user.id})}" method="post">
-                <button type="submit" class="text-blue-500 hover:text-blue-700">Durum Değiştir</button>
-              </form>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
+</div>
 
-  <!-- İstatistikler -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-    <div class="bg-white rounded-lg shadow p-6 text-center">
-      <h3 class="font-semibold text-gray-600">Toplam Kullanıcı</h3>
-      <p class="text-2xl font-bold" th:text="${totalUsers}">0</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-6 text-center">
-      <h3 class="font-semibold text-gray-600">Toplam Etkinlik</h3>
-      <p class="text-2xl font-bold" th:text="${totalEvents}">0</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-6 text-center">
-      <h3 class="font-semibold text-gray-600">Aktif Etkinlikler</h3>
-      <p class="text-2xl font-bold" th:text="${activeEvents}">0</p>
+
+<div id="confirmModal" class="confirm-modal">
+  <div class="modal-content">
+    <h3 class="text-xl font-bold mb-4" id="modalTitle"></h3>
+    <p class="text-gray-600 mb-6" id="modalMessage"></p>
+    <div class="flex justify-end gap-4">
+      <button onclick="closeConfirmModal()"
+              class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+        İptal
+      </button>
+      <button onclick="handleConfirm()"
+              class="px-4 py-2 text-white rounded-lg"
+              id="confirmButton">
+        Onayla
+      </button>
     </div>
   </div>
 </div>
+
+<script>
+  let currentAction = '';
+  let currentEventId = '';
+
+  function showConfirmModal(action, eventId) {
+    currentAction = action;
+    currentEventId = eventId;
+    const modal = document.getElementById('confirmModal');
+    const title = document.getElementById('modalTitle');
+    const message = document.getElementById('modalMessage');
+    const confirmButton = document.getElementById('confirmButton');
+
+    if (action === 'approve') {
+      title.textContent = 'Etkinliği Onayla';
+      message.textContent = 'Bu etkinliği onaylamak istediğinize emin misiniz?';
+      confirmButton.className = 'px-4 py-2 text-white bg-green-500 rounded-lg hover:bg-green-600';
+      confirmButton.textContent = 'Onayla';
+    } else {
+      title.textContent = 'Etkinliği Reddet';
+      message.textContent = 'Bu etkinliği reddetmek istediğinize emin misiniz?';
+      confirmButton.className = 'px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600';
+      confirmButton.textContent = 'Reddet';
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  function closeConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    modal.style.display = 'none';
+  }
+
+  async function handleConfirm() {
+    try {
+      const response = await fetch(`/admin/event/${currentAction}/${currentEventId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Başarılı işlem sonrası sayfayı yenile
+        window.location.reload();
+      } else {
+        throw new Error('İşlem başarısız');
+      }
+    } catch (error) {
+      console.error('Hata:', error);
+      alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      closeConfirmModal();
+    }
+  }
+
+  // Modal dışına tıklandığında kapat
+  window.onclick = function(event) {
+    const modal = document.getElementById('confirmModal');
+    if (event.target === modal) {
+      closeConfirmModal();
+    }
+  }
+
+  // Kullanıcı durumu değiştirme animasyonu
+  document.querySelectorAll('.user-card form button').forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      const form = this.closest('form');
+      const isEnabled = this.classList.contains('bg-green-500');
+
+      // Toggle butonunun görünümünü güncelle
+      this.classList.toggle('bg-green-500');
+      this.classList.toggle('bg-gray-200');
+
+      // Span elementinin pozisyonunu güncelle
+      const span = this.querySelector('span:last-child');
+      if (isEnabled) {
+        span.classList.remove('translate-x-5');
+        span.classList.add('translate-x-0');
+      } else {
+        span.classList.remove('translate-x-0');
+        span.classList.add('translate-x-5');
+      }
+
+      setTimeout(() => {
+        form.submit();
+      }, 200);
+    });
+  });
+
+  async function toggleEventStatus(eventId) {
+      try {
+          const response = await fetch(`/admin/event/toggle/${eventId}`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              }
+          });
+
+          if (response.ok) {
+              window.location.reload();
+          } else {
+              throw new Error('İşlem başarısız');
+          }
+      } catch (error) {
+          console.error('Hata:', error);
+          alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+      }
+  }
+  async function deleteEvent(eventId) {
+      if (!confirm('Bu etkinliği silmek istediğinize emin misiniz?')) {
+          return;
+      }
+
+      try {
+          const response = await fetch(`/admin/event/delete/${eventId}`, {
+              method: 'DELETE',
+              headers: {
+                  'Content-Type': 'application/json'
+              }
+          });
+
+          if (response.ok) {
+              window.location.reload();
+          } else {
+              throw new Error('İşlem başarısız');
+          }
+      } catch (error) {
+          console.error('Hata:', error);
+          alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+      }
+  }
+</script>
 </body>
 </html>

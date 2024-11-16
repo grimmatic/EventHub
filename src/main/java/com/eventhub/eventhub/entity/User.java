@@ -120,4 +120,16 @@ public class User implements UserDetails {
                 ", role=" + role +
                 '}';
     }
+
+    @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
+    private List<Event> createdEvents = new ArrayList<>();
+
+    public int getCreatedEventsCount() {
+        if (createdEvents == null) {
+            return 0;
+        }
+        return (int) createdEvents.stream()
+                .filter(event -> Boolean.TRUE.equals(event.getApproved()))
+                .count();
+    }
 }

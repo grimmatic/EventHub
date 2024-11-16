@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 
 import java.time.LocalDateTime;
@@ -25,10 +26,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     long countByApprovedIsTrue();
 
     List<Event> findByCreatorId(Long creatorId);
-
-    @Query("SELECT e FROM Event e JOIN e.participants p WHERE p = :user")
-
-    List<Event> findByParticipantsUser(User currentUser);
+    @Query("SELECT e FROM Event e JOIN e.participants p WHERE p = :currentUser")
+    List<Event> findByParticipantsUser(@Param("currentUser") User currentUser);
+    List<Event> findByCreatorIdAndApprovedIsTrue(Long creatorId);
 
     @Query("SELECT e FROM Event e WHERE e.approved = true ORDER BY e.startDate DESC")
     List<Event> findByApprovedIsTrue();

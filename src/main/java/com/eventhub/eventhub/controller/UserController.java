@@ -1,6 +1,8 @@
 package com.eventhub.eventhub.controller;
 
+import com.eventhub.eventhub.entity.Event;
 import com.eventhub.eventhub.entity.User;
+import com.eventhub.eventhub.service.EventService;
 import com.eventhub.eventhub.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -18,6 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final EventService eventService;
 
     @GetMapping("/kayit")
     public String showRegistrationForm() {
@@ -65,6 +69,10 @@ public class UserController {
             } else {
                 model.addAttribute("profileImage", "/images/default-avatar.png");
             }
+
+
+            List<Event> userEvents = eventService.getApprovedEventsByOrganizer(user.getId());
+            model.addAttribute("userEvents", userEvents);
             model.addAttribute("user", user);
             return "user/profil";
         } catch (Exception e) {
@@ -84,9 +92,7 @@ public class UserController {
             if (user.getInterests() == null) {
                 user.setInterests(new String[0]);
             }
-            // Debug için interests'i kontrol et
-            System.out.println("Profil düzenleme sayfasında mevcut interests: " +
-                    (user.getInterests() != null ? Arrays.toString(user.getInterests()) : "null"));
+
 
             // İlgi alanlarını model'e ekle
             model.addAttribute("allInterests", Arrays.asList(
@@ -125,8 +131,6 @@ public class UserController {
             currentUser.setPhone(phone);
             currentUser.setInterests(interests != null ? interests : new String[0]);
 
-            // Debug için
-            System.out.println("Güncellenecek ilgi alanları: " + Arrays.toString(interests));
 
             userService.updateUser(currentUser, profileImage);
             redirectAttributes.addFlashAttribute("success", "Profiliniz başarıyla güncellendi");

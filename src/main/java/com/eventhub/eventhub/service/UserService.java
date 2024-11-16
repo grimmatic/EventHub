@@ -39,7 +39,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final UserPointsRepository userPointsRepository;
-    private static final String DEFAULT_AVATAR = "/images/default-avatar.png";
     @Value("${file.upload-dir:uploads/profiles}")
     private String uploadDir;
 
@@ -59,11 +58,9 @@ public class UserService {
         // Varsayılan rol ata
         user.setRole(UserRole.valueOf("ROLE_USER"));
 
-        if (user.getInterests() != null && user.getInterests().length > 0) {
-            // Debug için interests'i logla
-            System.out.println("Kayıt sırasında seçilen interests: " + Arrays.toString(user.getInterests()));
-        } else {
+        if (user.getInterests() == null && user.getInterests().length > 0) {
             user.setInterests(new String[0]);
+
         }
 
         // Profil fotoğrafını işle
@@ -93,20 +90,6 @@ public class UserService {
 
         // Kullanıcı kaydını gerçekleştir
         return userRepository.save(user);
-    }
-    private String processProfileImage(MultipartFile file) {
-        try {
-            String fileName = UUID.randomUUID().toString() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-            Path uploadPath = Path.of("src/main/resources/static/uploads/profiles");
-            Files.createDirectories(uploadPath);
-            Path targetLocation = uploadPath.resolve(fileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
-            // URL'yi başında / ile döndür
-            return "/uploads/profiles/" + fileName;
-        } catch (IOException ex) {
-            throw new RuntimeException("Profil fotoğrafı kaydedilemedi", ex);
-        }
     }
 
 
@@ -181,7 +164,7 @@ public class UserService {
         }
 
         currentUser.setInterests(updatedUser.getInterests());
-        System.out.println("Güncellenecek ilgi alanları: " + Arrays.toString(updatedUser.getInterests()));
+
         // Profil fotoğrafını işle
         if (profileImage != null && !profileImage.isEmpty()) {
             try {
@@ -229,28 +212,27 @@ public class UserService {
         return userRepository.count();
     }
 
-    // Admin kullanıcısı oluştur
-    @Transactional
-    public User createAdminUser(User user) {
-        if (userRepository.existsByUsername(user.getUsername())) {
-            throw new RuntimeException("Bu kullanıcı adı zaten kullanımda");
-        }
-        user.setRole(UserRole.ROLE_ADMIN);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return userRepository.save(user);
-    }
+
 
     @Transactional
     public void addPoints(Long userId, Integer points, String activityType, Event event) {
         User user = getUserById(userId);
+        List<UserPoints> existingPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                userId, event.getId(), activityType
+        );
+        if (!existingPoints.isEmpty()) {
+            return;
+        }
+        if (event != null && !Boolean.TRUE.equals(event.getApproved())) {
+            return;
+        }
 
         // İlk etkinlik katılımı kontrolü
         if ("EVENT_JOIN".equals(activityType) && !userPointsRepository.hasFirstEventBonus(userId)) {
-            // İlk katılım bonusu
             UserPoints firstEventBonus = new UserPoints();
             firstEventBonus.setUser(user);
             firstEventBonus.setPoints(20);
-            firstEventBonus.setActivityType("FIRST_EVENT");
+            firstEventBonus.setActivityType("FIRST_EVENT_BONUS");
             firstEventBonus.setEvent(event);
             userPointsRepository.save(firstEventBonus);
 
@@ -265,20 +247,39 @@ public class UserService {
         userPoints.setEvent(event);
         userPointsRepository.save(userPoints);
 
-        // Kullanıcının toplam puanını güncelle
         user.setTotalPoints(user.getTotalPoints() + points);
         userRepository.save(user);
     }
+    @Transactional
+    public void removePoints(Long userId, Long eventId) {
+        User user = getUserById(userId);
 
-    public Integer getTotalPoints(Long userId) {
-        return userPointsRepository.getTotalPointsByUserId(userId);
+        // Etkinliğe katılım için verilen puanları bul
+        List<UserPoints> eventJoinPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                userId, eventId, "EVENT_JOIN"
+        );
+
+        if (!eventJoinPoints.isEmpty()) {
+            UserPoints joinPoints = eventJoinPoints.get(0);
+            // Katılım puanını geri al (10 puan)
+            user.setTotalPoints(user.getTotalPoints() - joinPoints.getPoints());
+            userPointsRepository.delete(joinPoints);
+        }
+
+        // İlk katılım bonusu puanlarını bul
+        List<UserPoints> firstEventBonusPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                userId, eventId, "FIRST_EVENT_BONUS"
+        );
+
+        if (!firstEventBonusPoints.isEmpty()) {
+            UserPoints bonusPoints = firstEventBonusPoints.get(0);
+            // İlk katılım puanını geri al (20 puan)
+            user.setTotalPoints(user.getTotalPoints() - bonusPoints.getPoints());
+            userPointsRepository.delete(bonusPoints);
+        }
+
+        userRepository.save(user);
     }
-
-    public List<UserPoints> getUserPointsHistory(Long userId) {
-        return userPointsRepository.findByUserId(userId);
-    }
-
-
 
 
 }

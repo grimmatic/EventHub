@@ -19,4 +19,8 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
 
     @Query("SELECT COUNT(p) FROM Participant p WHERE p.event.creator.id = :organizerId")
     int countParticipantsByOrganizer(@Param("organizerId") Long organizerId);
+
+    @Modifying
+    @Query("DELETE FROM Participant p WHERE p.event.id = :eventId")
+    void deleteByEventId(@Param("eventId") Long eventId);
 }

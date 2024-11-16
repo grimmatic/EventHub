@@ -289,7 +289,7 @@
     <!-- İstatistikler -->
     <div class="profile-stats" style="margin-left: 35rem">
         <div class="stat-item">
-            <div class="stat-value">24</div>
+            <div class="stat-value" th:text="${user.getCreatedEventsCount()}">0</div>
             <div class="stat-label">Etkinlik</div>
         </div>
         <div class="stat-item">
@@ -343,17 +343,27 @@
         <!-- Etkinlikler Sekmesi -->
         <div id="events" class="tab-content" style="display: none;">
             <div class="content-section">
-                <h3 class="text-lg font-semibold mb-4">Katıldığı Etkinlikler</h3>
-                <!-- Örnek Etkinlik Kartı -->
-                <div class="event-card">
-                    <img src="/api/placeholder/80/80" alt="Etkinlik" class="event-image">
+                <h3 class="text-lg font-semibold mb-4">Oluşturduğu Etkinlikler</h3>
+                <!-- Show message if no events -->
+                <div th:if="${#lists.isEmpty(userEvents)}" class="text-gray-500 text-center py-4">
+                    Henüz etkinlik oluşturmamış.
+                </div>
+                <!-- Event cards -->
+                <div th:each="event : ${userEvents}" class="event-card">
+                    <img th:src="@{'/images/categories/' + ${event.category.toLowerCase()} + '.jpg'}"
+                         th:alt="${event.category}"
+                         class="event-image">
                     <div class="event-info">
-                        <h4 class="font-semibold">Tech Summit 2024</h4>
-                        <p class="text-gray-600 text-sm">15 Aralık 2024, 10:00</p>
-                        <p class="text-gray-500 text-sm mt-1">İstanbul</p>
+                        <h4 class="font-semibold" th:text="${event.name}">Event Name</h4>
+                        <p class="text-gray-600 text-sm"
+                           th:text="${#temporals.format(event.startDate, 'dd MMMM yyyy, HH:mm')}">Date</p>
+                        <p class="text-gray-500 text-sm mt-1" th:text="${event.location}">Location</p>
+                        <a th:href="@{/event/{id}(id=${event.id})}"
+                           class="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block">
+                            Detayları Görüntüle →
+                        </a>
                     </div>
                 </div>
-                <!-- Diğer etkinlik kartları -->
             </div>
         </div>
 
@@ -371,3 +381,32 @@
         </div>
     </div>
 </div>
+</body>
+
+<script>
+    function switchTab(tabName) {
+        // Tüm tab içeriklerini gizle
+        const tabContents = document.getElementsByClassName('tab-content');
+        for (let content of tabContents) {
+            content.style.display = 'none';
+        }
+
+        // Tüm tabların active classını kaldır
+        const tabs = document.getElementsByClassName('tab');
+        for (let tab of tabs) {
+            tab.classList.remove('active');
+        }
+
+        // Seçili tab içeriğini göster
+        document.getElementById(tabName).style.display = 'block';
+
+        // Tıklanan taba active class ekle
+        event.currentTarget.classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        switchTab('about');
+    });
+</script>
+
+</html>

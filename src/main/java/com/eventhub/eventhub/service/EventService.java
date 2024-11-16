@@ -35,6 +35,9 @@ public class EventService {
     public boolean isUserParticipant(Long eventId, Long userId) {
         return participantRepository.existsByUserIdAndEventId(userId, eventId);
     }
+    public List<Event> getApprovedEventsByOrganizer(Long organizerId) {
+        return eventRepository.findByCreatorIdAndApprovedIsTrue(organizerId);
+    }
 
     @Transactional
     public Event createEvent(Event event) {
@@ -50,9 +53,9 @@ public class EventService {
 
         Event savedEvent = eventRepository.save(event);
 
-        // Etkinlik oluşturma puanı
-        userService.addPoints(creator.getId(), 15, "EVENT_CREATE", savedEvent);
-
+        if (Boolean.TRUE.equals(savedEvent.getApproved())) {
+            userService.addPoints(creator.getId(), 15, "EVENT_CREATE", savedEvent);
+        }
         return savedEvent;
     }
 
@@ -65,9 +68,9 @@ public class EventService {
                 .orElseThrow(() -> new RuntimeException("Etkinlik bulunamadı"));
     }
     public List<Event> getPendingEvents() {
-
-        return eventRepository.findByApprovedIsFalseOrApprovedIsNull();
-
+        return eventRepository.findAll().stream()
+                .filter(event -> !Boolean.TRUE.equals(event.getApproved()))
+                .collect(Collectors.toList());
     }
 
     public Page<Event> searchEvents(String keyword, int page, int size) {
@@ -103,26 +106,13 @@ public class EventService {
     @Transactional
     public void leaveEvent(Long eventId) {
         User currentUser = userService.getCurrentUser();
+        Event event = getEventById(eventId);
 
         // Katılımcıyı etkinlikten çıkar
         participantRepository.deleteByUserIdAndEventId(currentUser.getId(), eventId);
 
-        // Puanları geri al
-        List<UserPoints> eventPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
-                currentUser.getId(),
-                eventId,
-                "EVENT_JOIN"
-        );
-
-        if (!eventPoints.isEmpty()) {
-            UserPoints points = eventPoints.get(0);
-            // Kullanıcının toplam puanından düş
-            currentUser.setTotalPoints(currentUser.getTotalPoints() - points.getPoints());
-            userRepository.save(currentUser);
-
-            // Puan kaydını sil
-            userPointsRepository.delete(points);
-        }
+        // Puanları geri al (UserService'deki removePoints metodunu kullan)
+        userService.removePoints(currentUser.getId(), eventId);
     }
 
     public boolean hasDateConflict(LocalDateTime startDate, LocalDateTime endDate) {
@@ -190,25 +180,69 @@ public class EventService {
     @Transactional
     public void approveEvent(Long eventId) {
         Event event = getEventById(eventId);
+
+        if (Boolean.TRUE.equals(event.getApproved())) {
+            return;
+        }
+
         event.setApproved(true);
         eventRepository.save(event);
+
+
+            userService.addPoints(event.getCreator().getId(), 15, "EVENT_CREATE", event);
+
     }
 
     @Transactional
     public void rejectEvent(Long eventId) {
+        Event event = getEventById(eventId);
+
+        // Eğer etkinlik zaten onaylıysa, puanları geri al
+        if (Boolean.TRUE.equals(event.getApproved())) {
+            try {
+                // EVENT_CREATE puanlarını bul ve sil
+                List<UserPoints> createPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                        event.getCreator().getId(),
+                        eventId,
+                        "EVENT_CREATE"
+                );
+
+                if (!createPoints.isEmpty()) {
+                    User creator = event.getCreator();
+                    UserPoints points = createPoints.get(0);
+                    creator.setTotalPoints(creator.getTotalPoints() - points.getPoints());
+                    userRepository.save(creator);
+                    userPointsRepository.delete(points);
+                }
+
+                // Katılımcıların puanlarını geri al
+                List<Participant> participants = participantRepository.findByEventId(eventId);
+                for (Participant participant : participants) {
+                    userService.removePoints(participant.getUser().getId(), eventId);
+                }
+            } catch (Exception e) {
+
+            }
+        }
+
+        // Katılımcıları sil
+        participantRepository.deleteByEventId(eventId);
+
+        // Etkinliği sil
         eventRepository.deleteById(eventId);
     }
 
+    @Transactional
+    public Event updateEvent(Event event) {
+        return eventRepository.save(event);
+    }
+
     public long getTotalEvents() {
-
         return eventRepository.count();
-
     }
 
     public long getActiveEvents() {
-
-        return eventRepository.countByApprovedIsTrue();
-
+        return eventRepository.findByApprovedIsTrue().size();
     }
 
     public List<String> getAllCategories() {
