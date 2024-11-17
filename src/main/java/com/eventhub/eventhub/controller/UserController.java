@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +41,8 @@ public class UserController {
         }
     }
 
+
+
     @GetMapping("/giris")
     public String showLoginForm(Model model) {
         if (model.containsAttribute("success")) {
@@ -47,6 +50,7 @@ public class UserController {
         }
         return "user/giris";
     }
+
 
     @PostMapping("/giris")
     public String girisYap(@RequestParam String username,
@@ -59,6 +63,8 @@ public class UserController {
             return "redirect:/user/giris";
         }
     }
+
+
 
     @GetMapping("/profil")
     public String profil(Model model) {
@@ -141,4 +147,21 @@ public class UserController {
             return "redirect:/user/profil-duzenle";
         }
     }
+
+    @GetMapping("/users/list")
+    @ResponseBody
+    public List<Map<String, Object>> getAllUsers() {
+        return userService.getAllUsers().stream()
+                .map(user -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", user.getId());
+                    map.put("firstName", user.getFirstName());
+                    map.put("lastName", user.getLastName());
+                    return map;
+                })
+                .toList();
+    }
+
+
+
 }

@@ -276,27 +276,7 @@
                     <h2 class="text-xl font-semibold">Etkinlik Sohbeti</h2>
                 </div>
                 <div class="chat-messages" id="chatMessages">
-                    <!-- Example messages -->
-                    <div class="message message-received">
-                        <div class="flex items-start">
-                            <img src="/images/default-avatar.png" alt="User" class="w-8 h-8 rounded-full mr-3">
-                            <div>
-                                <div class="font-semibold text-sm">Ahmet Yılmaz</div>
-                                <div>Etkinliğe nasıl ulaşabilirim?</div>
-                                <div class="text-xs text-gray-500 mt-1">10:30</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="message message-sent">
-                        <div class="flex items-start justify-end">
-                            <div class="text-right">
-                                <div class="font-semibold text-sm">Sen</div>
-                                <div>Metro ile gelebilirsiniz, durak çok yakın.</div>
-                                <div class="text-xs text-gray-500 mt-1">10:32</div>
-                            </div>
-                            <img src="/images/default-avatar.png" alt="You" class="w-8 h-8 rounded-full ml-3">
-                        </div>
-                    </div>
+
                 </div>
                 <div class="p-4 border-t">
                     <div class="flex gap-2">
@@ -345,7 +325,7 @@
             <div class="space-y-2">
                 <!-- Mesaj Gönder Butonu -->
                 <button  onclick="openChatModal()"
-                        class="w-full flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition">
+                         class="w-full flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -405,13 +385,10 @@
                 <p class="text-sm text-gray-600">Organizatör</p>
             </div>
         </div>
-        <button class="w-full bg-blue-50 text-blue-600 py-2 px-4 rounded-lg hover:bg-blue-100 transition">
-            Mesaj Gönder
-        </button>
     </div>
 
     <!-- Participants -->
-    <div class="bg-white rounded-lg p-6 mb-8 shadow">
+    <div class="bg-white rounded-lg p-6 mb-8 shadow mt-8">
         <h2 class="text-xl font-semibold mb-4">Katılımcılar</h2>
         <div class="participant-list space-y-4">
             <div th:each="participant : ${participants}" class="flex items-center">
@@ -489,26 +466,118 @@
     const chatInput = document.querySelector('.chat-container input');
     const sendButton = document.querySelector('.chat-container button');
 
+    function getEventIdFromUrl() {
+        const path = window.location.pathname;
+        const eventId = path.split('/').pop();
+        return eventId;
+    }
+
+    async function loadMessageHistory() {
+        const eventId = getEventIdFromUrl();
+        try {
+            const response = await fetch(`/event/messages?eventId=${eventId}`);
+            if (!response.ok) {
+                throw new Error('Failed to load messages');
+            }
+            const messages = await response.json();
+            displayMessages(messages);
+        } catch (error) {
+            console.error('Error loading messages:', error);
+            alert('Mesaj geçmişi yüklenirken bir hata oluştu.');
+        }
+    }
+    function displayMessages(messages) {
+        chatMessages.innerHTML = ''; // Mevcut mesajları temizle
+
+        messages.forEach(message => {
+            const messageHtml = createMessageHTML(message);
+            chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+        });
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function createMessageHTML(message) {
+        const time = new Date(message.timestamp).toLocaleTimeString();
+
+        if (message.currentUser) {
+            return `
+            <div class="message message-sent">
+                <div class="flex items-start justify-end">
+                    <div class="text-right">
+                        <div class="font-semibold text-sm">Sen</div>
+                        <div class="bg-blue-500 text-white rounded-lg py-2 px-4 max-w-md">
+                            ${message.message}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">${time}</div>
+                    </div>
+                    <img src="/images/default-avatar.png" alt="You" class="w-8 h-8 rounded-full ml-3">
+                </div>
+            </div>
+        `;
+        } else {
+            return `
+            <div class="message message-received">
+                <div class="flex items-start">
+                    <img src="/images/default-avatar.png" alt="Other" class="w-8 h-8 rounded-full mr-3">
+                    <div>
+                        <div class="font-semibold text-sm">${message.firstName} ${message.lastName}</div>
+                        <div class="bg-gray-200 rounded-lg py-2 px-4 max-w-md">
+                            ${message.message}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">${time}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
+    }
+
+    // Mesaj gönderme fonksiyonu
+    async function sendMessageToBackend(message) {
+        const eventId = getEventIdFromUrl();
+
+        try {
+            const response = await fetch(`/event/send?message=${encodeURIComponent(message)}&eventId=${eventId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Message sending failed');
+            }
+
+            const messageData = await response.json();
+            return messageData;
+        } catch (error) {
+            console.error('Error sending message:', error);
+            throw error;
+        }
+    }
+
+    // Chat UI ve mesaj gönderme mantığı
     if (chatInput && sendButton) {
-        function sendMessage() {
+        // Sayfa yüklendiğinde mesaj geçmişini yükle
+        document.addEventListener('DOMContentLoaded', loadMessageHistory);
+
+        async function sendMessage() {
             const message = chatInput.value.trim();
             if (message) {
-                // Message send logic here
-                const messageHtml = `
-                        <div class="message message-sent">
-                            <div class="flex items-start justify-end">
-                                <div class="text-right">
-                                    <div class="font-semibold text-sm">Sen</div>
-                                    <div>${message}</div>
-                                    <div class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</div>
-                                </div>
-                                <img src="/images/default-avatar.png" alt="You" class="w-8 h-8 rounded-full ml-3">
-                            </div>
-                        </div>
-                    `;
-                chatMessages.insertAdjacentHTML('beforeend', messageHtml);
-                chatInput.value = '';
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                try {
+                    const sentMessage = await sendMessageToBackend(message);
+                    const messageHtml = createMessageHTML({
+                        ...sentMessage,
+                        currentUser: true
+                    });
+
+                    chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+                    chatInput.value = '';
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } catch (error) {
+                    alert('Mesaj gönderilemedi. Lütfen tekrar deneyin.');
+                }
             }
         }
 
@@ -519,6 +588,7 @@
             }
         });
     }
+
     const leaveButton = document.getElementById('leaveButton');
     if (leaveButton) {
         leaveButton.addEventListener('click', async function() {
@@ -553,6 +623,11 @@
     let startPoint = null;
     let currentEventMarker = null;
     let otherEventMarkers = {};
+
+    function openChatModal() {
+        // Redirect to the chat page
+        window.location.href = "http://localhost:8080/sohbet";
+    }
 
     // Thymeleaf'ten verileri al
     const eventLocation = /*[[${location}]]*/ { latitude: 0, longitude: 0 };

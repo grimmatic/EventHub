@@ -1,6 +1,10 @@
 <!DOCTYPE html>
+
 <html xmlns:th="http://www.thymeleaf.org">
+
+
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mesajlar - EventHub</title>
@@ -11,11 +15,11 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+
         .chat-container {
             max-width: 1200px;
             margin: 2rem auto;
-            display: grid;
-            grid-template-columns: 300px 1fr;
+            display: flex;
             gap: 1rem;
             background: white;
             border-radius: 1rem;
@@ -107,6 +111,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            width: 100%;
         }
 
         .chat-header {
@@ -268,6 +273,11 @@
 </head>
 <body>
 
+<script src="/js/chat.js"></script>
+<input type="hidden" id="currentUserId" th:value="${currentUserId}">
+
+
+
 
 <!-- Navigation -->
 <div th:replace="fragments/navbar :: navbar"></div>
@@ -277,34 +287,29 @@
     <div class="contacts-sidebar">
         <div class="contacts-header">
             <h2 class="text-xl font-semibold">Mesajlar</h2>
-            <button class="new-chat-button">
-                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Yeni Sohbet
-            </button>
+
             <div class="search-box">
                     <span class="search-icon">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </span>
-                <input type="text" placeholder="Kişilerde ara...">
+                <input id="search-input" type="text" placeholder="Kişilerde ara...">
             </div>
         </div>
         <div class="contacts-list">
             <div class="contact-item active">
-                <div class="contact-avatar">AY</div>
+                <div class="contact-avatar"></div>
                 <div class="contact-info">
-                    <div class="contact-name">Ahmet Yılmaz<span class="online-status"></span></div>
-                    <div class="last-message">Etkinlik için teşekkürler!</div>
+                    <div class="contact-name"><span class="online-status"></span></div>
+                    <div class="last-message"></div>
                 </div>
             </div>
             <div class="contact-item">
-                <div class="contact-avatar">MD</div>
+                <div class="contact-avatar"></div>
                 <div class="contact-info">
-                    <div class="contact-name">Mehmet Demir<span class="online-status offline-status"></span></div>
-                    <div class="last-message">Yarın görüşürüz o zaman</div>
+                    <div class="contact-name"><span class="online-status offline-status"></span></div>
+                    <div class="last-message"></div>
                 </div>
             </div>
             <!-- Diğer kişiler -->
@@ -315,38 +320,15 @@
     <div class="chat-section">
         <div class="chat-header">
             <div class="flex items-center">
-                <div class="contact-avatar">AY</div>
-                <div class="ml-3">
-                    <div class="font-semibold">Ahmet Yılmaz</div>
-                    <div class="text-sm text-gray-500">Çevrimiçi</div>
+                <div class="">
+                    <div class="font-semibold">Mesaj Başlatmak İçin Kullanıcı Seçin</div>
+                    <div class="text-sm text-gray-500"></div>
                 </div>
             </div>
         </div>
 
         <div class="chat-messages">
-            <div class="message message-received">
-                <div class="message-content">
-                    Merhaba! Tech Summit etkinliğine katılacak mısın?
-                </div>
-                <div class="message-time">10:30</div>
-            </div>
-            <div class="message message-sent">
-                <div class="message-content">
-                    Evet, kesinlikle katılacağım. Sen de geliyor musun? 😊
-                </div>
-                <div class="message-time">10:32</div>
-                <div class="read-status">Okundu</div>
-                <div class="message-actions">
-                    <span class="action-button edit-message">✏️</span>
-                    <span class="action-button delete-message">🗑️</span>
-                </div>
-            </div>
-            <div class="message message-received">
-                <div class="message-content">
-                    Harika! Ben de orada olacağım. Belki konferans öncesi bir kahve içebiliriz ☕
-                </div>
-                <div class="message-time">10:33</div>
-            </div>
+
         </div>
 
         <div class="chat-input">
@@ -375,152 +357,5 @@
         </div>
     </div>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const messagesContainer = document.querySelector('.chat-messages');
-        const input = document.querySelector('.message-input');
-        const fileInput = document.getElementById('file-input');
-        let currentEditingMessage = null;
-
-        // Emoji picker
-        const emojiButton = document.querySelector('.emoji-button');
-        let emojiPicker = null;
-
-        emojiButton.addEventListener('click', () => {
-            if (emojiPicker) {
-                emojiPicker.remove();
-                emojiPicker = null;
-                return;
-            }
-
-            emojiPicker = document.createElement('div');
-            emojiPicker.className = 'emoji-picker';
-            document.querySelector('.input-container').appendChild(emojiPicker);
-
-            new EmojiMart.Picker({
-                onSelect: emoji => {
-                    input.value += emoji.native;
-                    emojiPicker.remove();
-                    emojiPicker = null;
-                }
-            });
-        });
-
-        // Dosya yükleme
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const messageContent = createMessage('', true);
-
-                if (file.type.startsWith('image/')) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'file-preview';
-                    messageContent.appendChild(img);
-                } else {
-                    const fileAttachment = document.createElement('div');
-                    fileAttachment.className = 'file-attachment';
-                    fileAttachment.innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
-                    </svg>
-                    <span>${file.name}</span>
-                `;
-                    messageContent.appendChild(fileAttachment);
-                }
-            };
-
-            if (file.type.startsWith('image/')) {
-                reader.readAsDataURL(file);
-            } else {
-                reader.readAsText(file);
-            }
-        });
-
-        // Mesaj gönderme
-        function createMessage(text, withActions = true) {
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message message-sent';
-
-            const now = new Date();
-            const time = now.getHours().toString().padStart(2, '0') + ':' +
-                now.getMinutes().toString().padStart(2, '0');
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.textContent = text;
-
-            messageElement.appendChild(contentDiv);
-            messageElement.innerHTML += `<div class="message-time">${time}</div>`;
-            messageElement.innerHTML += `<div class="read-status">Gönderildi</div>`;
-
-            if (withActions) {
-                messageElement.innerHTML += `
-                <div class="message-actions">
-                    <span class="action-button edit-message">✏️</span>
-                    <span class="action-button delete-message">🗑️</span>
-                </div>
-            `;
-            }
-
-            // Mesaj aksiyonlarını ekle
-            setTimeout(() => {
-                const readStatus = messageElement.querySelector('.read-status');
-                if (readStatus) {
-                    readStatus.textContent = 'Okundu';
-                }
-            }, 2000);
-
-            return contentDiv;
-        }
-
-        document.querySelector('.send-button').addEventListener('click', function() {
-            const message = input.value.trim();
-            if (message) {
-                if (currentEditingMessage) {
-                    currentEditingMessage.textContent = message;
-                    currentEditingMessage = null;
-                    input.value = '';
-                    this.textContent = 'Gönder';
-                    return;
-                }
-
-                createMessage(message);
-                messagesContainer.appendChild(messageElement);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                input.value = '';
-            }
-        });
-
-        // Mesaj düzenleme ve silme
-        messagesContainer.addEventListener('click', function(e) {
-            if (e.target.classList.contains('edit-message')) {
-                const messageContent = e.target.closest('.message').querySelector('.message-content');
-                input.value = messageContent.textContent;
-                currentEditingMessage = messageContent;
-                document.querySelector('.send-button').textContent = 'Düzenle';
-                input.focus();
-            }
-
-            if (e.target.classList.contains('delete-message')) {
-                if (confirm('Bu mesajı silmek istediğinizden emin misiniz?')) {
-                    e.target.closest('.message').remove();
-                }
-            }
-        });
-
-        // Enter tuşu ile mesaj gönderme
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                document.querySelector('.send-button').click();
-            }
-        });
-    });
-</script>
 </body>
 </html>

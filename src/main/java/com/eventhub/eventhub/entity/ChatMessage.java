@@ -1,5 +1,6 @@
 package com.eventhub.eventhub.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -15,10 +16,12 @@ public class ChatMessage {
 
     @ManyToOne
     @JoinColumn(name = "sender_id", nullable = false)
+    @JsonIgnore
     private User sender;
 
     @ManyToOne
     @JoinColumn(name = "receiver_id", nullable = false)
+    @JsonIgnore
     private User receiver;
 
     @Column(name = "message_text", nullable = false)
