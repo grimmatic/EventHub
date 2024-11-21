@@ -20,6 +20,7 @@ public class DataInitializationService implements CommandLineRunner {
     private final EventService eventService;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
+    private final UserService userService;
 
     @Value("${app.init-sample-data:false}")
     private boolean shouldInitializeSampleData;
@@ -84,7 +85,8 @@ public class DataInitializationService implements CommandLineRunner {
 
 
         for (Event event : sampleEvents) {
-            eventRepository.save(event);
+            Event savedEvent = eventRepository.save(event);
+            userService.addPoints(admin.getId(), 15, "EVENT_CREATE", savedEvent);
         }
     }
 

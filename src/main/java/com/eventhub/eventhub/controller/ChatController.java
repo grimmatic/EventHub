@@ -20,17 +20,37 @@ public class ChatController {
     private final UserService userService;
 
     @GetMapping("/sohbet")
-    public String chatPage(Model model) {
-        // Mevcut kullanıcı ID'sini model'e ekle
+    public String chatPage(@RequestParam(required = false) Long userId, Model model) {
+        // Mevcut kullanıcı kontrolü
         User currentUser = userService.getCurrentUser();
         if (currentUser == null) {
             throw new RuntimeException("Kullanıcı bulunamadı");
         }
         model.addAttribute("currentUserId", currentUser.getId());
+
+        // Eğer belirli bir kullanıcıyla sohbet başlatılacaksa
+        if (userId != null) {
+            try {
+                User targetUser = userService.getUserById(userId);
+                model.addAttribute("selectedUser", targetUser);
+                // Sohbet geçmişini de ekleyelim
+                List<ChatMessageDTO> messages = chatService.getUserMessages(userId)
+                        .stream()
+                        .map(message -> {
+                            ChatMessageDTO dto = new ChatMessageDTO(message);
+                            dto.setCurrentUser(message.getSender().getId().equals(currentUser.getId()));
+                            return dto;
+                        })
+                        .toList();
+                model.addAttribute("initialMessages", messages);
+            } catch (Exception e) {
+                // Kullanıcı bulunamazsa sessizce devam et
+            }
+        }
+
         return "sohbet";
     }
 
-    // Mesajları listelemek için (frontend çağırır)
     @GetMapping("/sohbet/messages")
     @ResponseBody
     public List<ChatMessageDTO> getMessages(@RequestParam Long receiverId) {

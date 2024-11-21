@@ -29,7 +29,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('https://via.placeholder.com/1200x400') center/cover;
+            background: #1d4ed8;
             opacity: 0.2;
         }
 
@@ -127,6 +127,16 @@
         .join-button:hover::after {
             transform: translate(-50%, -50%) scale(2);
         }
+        .participant-item:hover .participant-actions {
+            opacity: 1;
+        }
+
+        /* Mobil görünüm için medya sorgusu */
+        @media (max-width: 640px) {
+            .participant-actions {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -194,11 +204,11 @@
                         <div class="text-gray-600">Katılımcı</div>
                     </div>
                     <div class="stat-drivingd">
-                        <div class="text-2xl font-bold text-blue-600">4</div>
+                        <div class="text-2xl font-bold text-blue-600" th:text="${duration}">4</div>
                         <div class="text-gray-600">Saat</div>
                     </div>
                     <div class="stat-drivingd">
-                        <div class="text-2xl font-bold text-blue-600">3</div>
+                        <div class="text-2xl font-bold text-blue-600" th:text="${daysLeft}">3</div>
                         <div class="text-gray-600">Gün Kaldı</div>
                     </div>
                 </div>
@@ -270,7 +280,125 @@
                 </div>
             </div>
 
-            <!-- Event Chat (Only visible to participants) -->
+
+        </div>
+
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white rounded-lg p-6 shadow">
+                <h2 class="text-xl font-semibold mb-4">Etkinlik Organizatörü</h2>
+                <div class="flex flex-col space-y-4">
+                    <!-- Organizatör Bilgileri -->
+                    <div class="flex items-start space-x-4">
+                        <!-- Profil Fotoğrafı ve XP -->
+                        <div class="relative flex-shrink-0">
+                            <img th:src="${event.creator.profileImageUrl != null ? event.creator.profileImageUrl : '/images/default-avatar.png'}"
+                                 alt="Profil"
+                                 class="w-16 h-16 rounded-full object-cover border-2 border-gray-200"/>
+                            <div class="absolute -bottom-2 -right-2 bg-blue-500 text-white text-xs font-medium px-2 py-1 rounded-full shadow-sm">
+                                <span th:text="${event.creator.totalPoints + ' Puan'}">0 Puan</span>
+                            </div>
+                        </div>
+
+                        <!-- İsim ve Bilgiler -->
+                        <div class="flex-grow">
+                            <h3 class="text-lg font-semibold" th:text="${event.creator.firstName + ' ' + event.creator.lastName}">
+                                John Doe
+                            </h3>
+                            <p class="text-sm text-gray-600 mb-1" th:text="${'@' + event.creator.username}">@johndoe</p>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                </svg>
+                                <span th:text="${event.creator.createdEventsCount + ' Etkinlik'}">0 Etkinlik</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- İletişim Butonları -->
+                    <div class="flex flex-col space-y-2 pt-2">
+                        <button th:onclick="'window.location.href=\'/sohbet?userId=' + ${event.creator.id} + '\''"
+                                class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            Mesaj Gönder
+                        </button>
+                        <a th:href="@{'/user/' + ${event.creator.id} + '/profil'}"
+                           class="w-full inline-flex items-center justify-center px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            Profili Görüntüle
+                        </a>
+                        <button th:onclick="'viewOtherEvents(' + ${event.creator.id} + ')'"
+                                class="w-full inline-flex items-center justify-center px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            Diğer Etkinlikleri
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="bg-white rounded-lg p-6 shadow">
+                <h2 class="text-xl font-semibold mb-4">Katılımcılar</h2>
+                <div class="participant-list divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
+                    <div th:each="participant : ${participants}"
+                         class="participant-item py-3 hover:bg-gray-50 transition-all duration-200">
+                        <div class="flex items-center gap-3">
+                            <!-- Profil Resmi -->
+                            <div class="flex-shrink-0">
+                                <img th:src="${participant.profileImageUrl != null ? participant.profileImageUrl : '/images/default-avatar.png'}"
+                                     alt="Profil"
+                                     class="w-10 h-10 rounded-full object-cover border-2 border-gray-200"/>
+                            </div>
+                            <!-- Kullanıcı Bilgileri -->
+                            <div class="flex-grow min-w-0">
+                                <p class="font-medium text-gray-900 truncate"
+                                   th:text="${participant.firstName + ' ' + participant.lastName}">
+                                </p>
+                                <p class="text-sm text-gray-500 truncate"
+                                   th:text="${participant.username}">
+                                </p>
+                            </div>
+                            <!-- İşlem Butonları -->
+                            <div class="flex items-center gap-2">
+                                <!-- Profili Görüntüle Butonu -->
+                                <a th:href="@{'/user/' + ${participant.id} + '/profil'}"
+                                   class="flex items-center px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                   title="Profili Görüntüle">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    Profil
+                                </a>
+                                <!-- Mesaj Gönder Butonu -->
+                                <button th:onclick="'window.location.href=\'/sohbet?userId=' + ${participant.id} + '\''"
+                                        class="flex items-center px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Mesaj Gönder">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                    </svg>
+                                    Mesaj
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="lg:col-span-3">
+
             <div th:if="${isParticipant}" class="chat-container">
                 <div class="p-4 bg-blue-50 border-b">
                     <h2 class="text-xl font-semibold">Etkinlik Sohbeti</h2>
@@ -290,141 +418,68 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-lg p-6 mb-8 shadow">
-            <h2 class="text-xl font-semibold mb-4">Etkinlik Organizatörü</h2>
-            <div class="flex items-center mb-4">
-                <img th:if="${event.creator.profileImageUrl != null}"
-                     th:src="${event.creator.profileImageUrl}"
-                     src="/images/default-avatar.png"
-                     alt="Creator"
-                     class="w-12 h-12 rounded-full border-2 border-blue-100">
-                <div class="ml-3">
-                    <h3 class="font-semibold" th:text="${event.creator.firstName + ' ' + event.creator.lastName}">
-                        John Doe
-                    </h3>
-                    <p class="text-sm text-gray-600" th:text="${'@' + event.creator.username}">@johndoe</p>
-                    <p class="text-xs text-gray-500 mt-1">
-                <span class="inline-flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </span>
-                    </p>
-                </div>
-            </div>
 
-            <!-- Organizatör Hakkında -->
-            <div class="mb-4 text-gray-600 text-sm">
-                <p class="text-gray-600 text-sm">
-                    Etkinlik organizatörü
-                </p>
-            </div>
 
-            <!-- İletişim Seçenekleri -->
-            <div class="space-y-2">
-                <!-- Mesaj Gönder Butonu -->
-                <button  onclick="openChatModal()"
-                         class="w-full flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    Mesaj Gönder
-                </button>
 
-                <!-- Profili Görüntüle Butonu -->
-                <a th:href="@{'/user/profil/' + ${event.creator.id}}"
-                   class="w-full flex items-center justify-center px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Profili Görüntüle
-                </a>
 
-                <!-- Etkinlikleri Görüntüle -->
-                <a th:href="@{'/event/organizer/' + ${event.creator.id}}"
-                   class="w-full flex items-center justify-center px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4 0h2m-2 0a2 2 0 00-2 2v.5a2 2 0 002 2h2a2 2 0 002-2V11a2 2 0 00-2-2h-2z"/>
-                    </svg>
-                    Diğer Etkinlikleri
-                </a>
-            </div>
+       </div>
 
-            <!-- Organizatör İstatistikleri -->
-            <div class="mt-6 grid grid-cols-3 gap-4 border-t pt-4">
-                <div class="text-center">
-                    <div class="text-lg font-semibold text-blue-600"
-                         th:text="${eventCount}">15</div>
-                    <div class="text-xs text-gray-500">Etkinlik</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-lg font-semibold text-blue-600"
-                         th:text="${totalParticipants}">350</div>
-                    <div class="text-xs text-gray-500">Katılımcı</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-lg font-semibold text-blue-600"
-                         th:text="${event.creator.totalPoints}">450</div>
-                    <div class="text-xs text-gray-500">Puan</div>
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center mb-4">
-            <img th:src="${event.creator.profileImageUrl}"
-                 src="/images/default-avatar.png"
-                 alt="Creator"
-                 class="w-12 h-12 rounded-full">
-            <div class="ml-3">
-                <h3 class="font-semibold" th:text="${event.creator.firstName + ' ' + event.creator.lastName}">
-                    Etkinlik Organizatörü
-                </h3>
-                <p class="text-sm text-gray-600">Organizatör</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Participants -->
-    <div class="bg-white rounded-lg p-6 mb-8 shadow mt-8">
-        <h2 class="text-xl font-semibold mb-4">Katılımcılar</h2>
-        <div class="participant-list space-y-4">
-            <div th:each="participant : ${participants}" class="flex items-center">
-                <img th:src="${participant.profileImageUrl}"
-                     src="/images/default-avatar.png"
-                     alt="Participant"
-                     class="w-10 h-10 rounded-full">
-                <div class="ml-3">
-                    <p class="font-medium" th:text="${participant.firstName + ' ' + participant.lastName}">
-                        Katılımcı İsmi
-                    </p>
-                    <p class="text-sm text-gray-500" th:text="${participant.username}">@username</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Similar Events -->
     <div class="bg-white rounded-lg p-6 shadow">
-        <h2 class="text-xl font-semibold mb-4">Benzer Etkinlikler</h2>
-        <div class="space-y-4">
-            <div th:each="similarEvent : ${similarEvents}" class="flex items-center">
-                <img src="/api/placeholder/80/80" alt="Event" class="w-16 h-16 rounded-lg object-cover">
-                <div class="ml-3">
-                    <h3 class="font-medium" th:text="${similarEvent.name}">Benzer Etkinlik</h3>
-                    <p class="text-sm text-gray-500"
-                       th:text="${#temporals.format(similarEvent.startDate, 'dd MMM yyyy')}">
-                        Tarih
-                    </p>
+        <h2 class="text-xl font-semibold mb-6">Benzer Etkinlikler</h2>
+        <div class="grid gap-4">
+            <a th:each="similarEvent : ${similarEvents}"
+               th:href="@{'/event/' + ${similarEvent.id}}"
+               class="group block bg-white rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-blue-200">
+                <div class="flex items-center p-4">
+                    <div class="relative w-20 h-20 flex-shrink-0">
+
+                        <img th:src="@{'/images/categories/' + ${similarEvent.category.toLowerCase()} + '.jpg'}"
+                             th:alt="${similarEvent.category}"
+                             class="rounded-lg object-cover w-full h-full">
+
+
+                    </div>
+
+                    <div class="ml-4 flex-grow">
+                        <h3 class="font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200"
+                            th:text="${similarEvent.name}">Benzer Etkinlik</h3>
+
+                        <!-- Tarih ve Konum -->
+                        <div class="mt-1 space-y-1">
+                            <div class="flex items-center text-sm text-gray-500">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span th:text="${#temporals.format(similarEvent.startDate, 'dd MMM yyyy, HH:mm')}">
+                                Tarih
+                            </span>
+                            </div>
+
+                            <div class="flex items-center text-sm text-gray-500">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                </svg>
+                                <span th:text="${similarEvent.location}" class="truncate">Konum</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sağ ok ikonu -->
+                    <div class="text-gray-400 group-hover:text-blue-500 transition-colors duration-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 </div>
-</div>
-</div>
+</body>
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -471,11 +526,10 @@
         const eventId = path.split('/').pop();
         return eventId;
     }
-
     async function loadMessageHistory() {
         const eventId = getEventIdFromUrl();
         try {
-            const response = await fetch(`/event/messages?eventId=${eventId}`);
+            const response = await fetch(`/event/chat-messages?eventId=${eventId}`); // URL'i güncelle
             if (!response.ok) {
                 throw new Error('Failed to load messages');
             }
@@ -499,6 +553,7 @@
 
     function createMessageHTML(message) {
         const time = new Date(message.timestamp).toLocaleTimeString();
+        const profileImage = message.profileImageUrl || '/images/default-avatar.png';
 
         if (message.currentUser) {
             return `
@@ -511,7 +566,9 @@
                         </div>
                         <div class="text-xs text-gray-500 mt-1">${time}</div>
                     </div>
-                    <img src="/images/default-avatar.png" alt="You" class="w-8 h-8 rounded-full ml-3">
+                    <img src="${profileImage}"
+                         alt="Profil"
+                         class="w-8 h-8 rounded-full ml-3 object-cover">
                 </div>
             </div>
         `;
@@ -519,7 +576,9 @@
             return `
             <div class="message message-received">
                 <div class="flex items-start">
-                    <img src="/images/default-avatar.png" alt="Other" class="w-8 h-8 rounded-full mr-3">
+                    <img src="${profileImage}"
+                         alt="Profil"
+                         class="w-8 h-8 rounded-full mr-3 object-cover">
                     <div>
                         <div class="font-semibold text-sm">${message.firstName} ${message.lastName}</div>
                         <div class="bg-gray-200 rounded-lg py-2 px-4 max-w-md">
@@ -538,7 +597,7 @@
         const eventId = getEventIdFromUrl();
 
         try {
-            const response = await fetch(`/event/send?message=${encodeURIComponent(message)}&eventId=${eventId}`, {
+            const response = await fetch(`/event/send-message?message=${encodeURIComponent(message)}&eventId=${eventId}`, { // URL'i güncelle
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -556,7 +615,10 @@
             throw error;
         }
     }
-
+    function viewOtherEvents(userId) {
+        // Profil sayfasına yönlendir ve events sekmesini aç
+        window.location.href = `/user/${userId}/profil?tab=events`;
+    }
     // Chat UI ve mesaj gönderme mantığı
     if (chatInput && sendButton) {
         // Sayfa yüklendiğinde mesaj geçmişini yükle
@@ -625,11 +687,13 @@
     let otherEventMarkers = {};
 
     function openChatModal() {
-        // Redirect to the chat page
+
         window.location.href = "http://localhost:8080/sohbet";
     }
+    function startChat(userId) {
+        window.location.href = `/sohbet?userId=${userId}`;
+    }
 
-    // Thymeleaf'ten verileri al
     const eventLocation = /*[[${location}]]*/ { latitude: 0, longitude: 0 };
     const eventName = /*[[${event.name}]]*/ 'Event';
     const otherEvents = /*[[${otherEventLocations}]]*/ [];
@@ -1012,5 +1076,4 @@
 
     document.addEventListener('DOMContentLoaded', initMap);
 </script>
-</body>
 </html>

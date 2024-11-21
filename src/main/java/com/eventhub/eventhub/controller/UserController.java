@@ -157,11 +157,31 @@ public class UserController {
                     map.put("id", user.getId());
                     map.put("firstName", user.getFirstName());
                     map.put("lastName", user.getLastName());
+                    map.put("profileImageUrl", user.getProfileImageUrl() != null ?
+                            user.getProfileImageUrl() : "/images/default-avatar.png");
+                    map.put("online", false);
                     return map;
                 })
                 .toList();
     }
 
+    @GetMapping("/{userId}/profil")
+    public String userProfile(@PathVariable Long userId, Model model) {
+        try {
+            User user = userService.getUserById(userId);
+            if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
+                model.addAttribute("profileImage", user.getProfileImageUrl());
+            } else {
+                model.addAttribute("profileImage", "/images/default-avatar.png");
+            }
 
+            List<Event> userEvents = eventService.getApprovedEventsByOrganizer(userId);
+            model.addAttribute("userEvents", userEvents);
+            model.addAttribute("user", user);
+            return "user/profil";
+        } catch (Exception e) {
+            return "redirect:/";
+        }
+    }
 
 }

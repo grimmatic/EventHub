@@ -1,6 +1,5 @@
 package com.eventhub.eventhub.controller;
 
-import com.eventhub.eventhub.dto.ChatMessageDTO;
 import com.eventhub.eventhub.dto.EventMessageDTO;
 import com.eventhub.eventhub.entity.User;
 import com.eventhub.eventhub.service.EventMessageService;
@@ -32,9 +31,9 @@ public class EventMessageController {
 
         return eventMessageService.getEventMessages(eventId)
                 .stream()
-                .map(eventMessage -> {
-                    EventMessageDTO dto = new EventMessageDTO(eventMessage);
-                    dto.setCurrentUser(eventMessage.getSender().getId().equals(currentUser.getId()));
+                .map(chatMessage -> {
+                    EventMessageDTO dto = new EventMessageDTO(chatMessage);
+                    dto.setCurrentUser(chatMessage.getSender().getId().equals(currentUser.getId()));
                     return dto;
                 })
                 .toList();
@@ -45,6 +44,4 @@ public class EventMessageController {
     public EventMessageDTO sendMessage(@RequestParam String message, @RequestParam Long eventId) {
         return new EventMessageDTO(eventMessageService.sendMessage(message, eventId));
     }
-
-
 }

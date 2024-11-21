@@ -192,50 +192,144 @@ public class EventService {
             userService.addPoints(event.getCreator().getId(), 15, "EVENT_CREATE", event);
 
     }
+    @Transactional
+    public void removeEventCreatePoints(Event event) {
+        if (Boolean.TRUE.equals(event.getApproved())) {
+            // EVENT_CREATE puanlarını bul
+            List<UserPoints> createPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                    event.getCreator().getId(),
+                    event.getId(),
+                    "EVENT_CREATE"
+            );
 
+            if (!createPoints.isEmpty()) {
+                User creator = event.getCreator();
+                // EVENT_CREATE için 15 puan düş
+                creator.setTotalPoints(creator.getTotalPoints() - 15);
+                userRepository.save(creator);
+                // Puan kaydını sil
+                userPointsRepository.delete(createPoints.get(0));
+            }
+        }
+    }
     @Transactional
     public void rejectEvent(Long eventId) {
         Event event = getEventById(eventId);
+        User creator = event.getCreator();
 
-        // Eğer etkinlik zaten onaylıysa, puanları geri al
-        if (Boolean.TRUE.equals(event.getApproved())) {
-            try {
-                // EVENT_CREATE puanlarını bul ve sil
+        try {
+            // 1. EVENT_CREATE puanlarını geri al (onaylı etkinlik ise)
+            if (Boolean.TRUE.equals(event.getApproved())) {
                 List<UserPoints> createPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
-                        event.getCreator().getId(),
-                        eventId,
-                        "EVENT_CREATE"
+                        creator.getId(), eventId, "EVENT_CREATE"
                 );
-
                 if (!createPoints.isEmpty()) {
-                    User creator = event.getCreator();
-                    UserPoints points = createPoints.get(0);
-                    creator.setTotalPoints(creator.getTotalPoints() - points.getPoints());
+                    creator.setTotalPoints(creator.getTotalPoints() - 15);
                     userRepository.save(creator);
-                    userPointsRepository.delete(points);
                 }
-
-                // Katılımcıların puanlarını geri al
-                List<Participant> participants = participantRepository.findByEventId(eventId);
-                for (Participant participant : participants) {
-                    userService.removePoints(participant.getUser().getId(), eventId);
-                }
-            } catch (Exception e) {
-
             }
+
+            // 2. Katılımcıların puanlarını geri al
+            List<Participant> participants = participantRepository.findByEventId(eventId);
+            for (Participant participant : participants) {
+                User user = participant.getUser();
+                // EVENT_JOIN puanını düş
+                List<UserPoints> joinPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                        user.getId(), eventId, "EVENT_JOIN"
+                );
+                if (!joinPoints.isEmpty()) {
+                    user.setTotalPoints(user.getTotalPoints() - 10);
+                }
+
+                // İlk etkinlik bonusunu düş
+                List<UserPoints> firstEventBonus = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                        user.getId(), eventId, "FIRST_EVENT_BONUS"
+                );
+                if (!firstEventBonus.isEmpty()) {
+                    user.setTotalPoints(user.getTotalPoints() - 20);
+                }
+                userRepository.save(user);
+            }
+
+            // 3. Veritabanı kayıtlarını temizle
+            participantRepository.deleteByEventId(eventId); // Önce katılımcıları sil
+            userPointsRepository.deleteByEventId(eventId);  // Sonra puanları sil
+            eventRepository.deleteById(eventId);            // En son etkinliği sil
+
+        } catch (Exception e) {
+            throw new RuntimeException("Etkinlik silinirken bir hata oluştu: " + e.getMessage());
         }
-
-        // Katılımcıları sil
-        participantRepository.deleteByEventId(eventId);
-
-        // Etkinliği sil
-        eventRepository.deleteById(eventId);
     }
 
     @Transactional
     public Event updateEvent(Event event) {
-        return eventRepository.save(event);
+        Event existingEvent = getEventById(event.getId());
+        System.out.println("Mevcut durum: " + existingEvent.getApproved() + ", Yeni durum: " + event.getApproved());
+
+        // Etkinlik pasife alınıyorsa
+        if (Boolean.TRUE.equals(existingEvent.getApproved()) && !Boolean.TRUE.equals(event.getApproved())) {
+            User creator = existingEvent.getCreator();
+            System.out.println("Organizatör için puan düşürme başlıyor - ID: " + creator.getId());
+
+            try {
+                // EVENT_CREATE puanlarını kontrol et
+                List<UserPoints> createPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                        creator.getId(), existingEvent.getId(), "EVENT_CREATE"
+                );
+
+                if (!createPoints.isEmpty()) {
+                    // Her UserPoints kaydı için işlem yap
+                    for (UserPoints point : createPoints) {
+                        System.out.println("Puan düşürülüyor: " + point.getPoints() + " - Kullanıcı: " + creator.getUsername());
+                        creator.setTotalPoints(creator.getTotalPoints() - point.getPoints());
+                        userPointsRepository.delete(point);
+                    }
+                    userRepository.save(creator);
+                    System.out.println("Organizatör puanı güncellendi. Yeni toplam: " + creator.getTotalPoints());
+                } else {
+                    System.out.println("EVENT_CREATE puanı bulunamadı");
+                }
+
+                // Katılımcıların puanlarını güncelle
+                List<Participant> participants = participantRepository.findByEventId(existingEvent.getId());
+                for (Participant participant : participants) {
+                    User user = participant.getUser();
+
+                    // EVENT_JOIN puanlarını düş
+                    List<UserPoints> joinPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                            user.getId(), existingEvent.getId(), "EVENT_JOIN"
+                    );
+                    if (!joinPoints.isEmpty()) {
+                        UserPoints joinPoint = joinPoints.get(0);
+                        user.setTotalPoints(user.getTotalPoints() - joinPoint.getPoints());
+                        userPointsRepository.delete(joinPoint);
+                    }
+
+                    // FIRST_EVENT_BONUS puanlarını düş
+                    List<UserPoints> bonusPoints = userPointsRepository.findByUserIdAndEventIdAndActivityType(
+                            user.getId(), existingEvent.getId(), "FIRST_EVENT_BONUS"
+                    );
+                    if (!bonusPoints.isEmpty()) {
+                        UserPoints bonusPoint = bonusPoints.get(0);
+                        user.setTotalPoints(user.getTotalPoints() - bonusPoint.getPoints());
+                        userPointsRepository.delete(bonusPoint);
+                    }
+
+                    userRepository.save(user);
+                }
+
+            } catch (Exception e) {
+                System.err.println("Hata oluştu: " + e.getMessage());
+                e.printStackTrace();
+                throw new RuntimeException("Puan düşürme işlemi sırasında hata: " + e.getMessage());
+            }
+        }
+
+        // Event'i güncelle
+        existingEvent.setApproved(event.getApproved());
+        return eventRepository.save(existingEvent);
     }
+
 
     public long getTotalEvents() {
         return eventRepository.count();

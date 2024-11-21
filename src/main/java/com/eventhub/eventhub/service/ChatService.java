@@ -23,20 +23,11 @@ public class ChatService {
             throw new RuntimeException("Current user not found");
         }
 
-        // İki yönlü mesajlaşmayı getir - hem gönderilen hem alınan
         return chatRepository.findBySenderIdAndReceiverIdOrSenderIdAndReceiverIdOrderBySentAtAsc(
                 currentUser.getId(), receiverId,
                 receiverId, currentUser.getId()
         );
     }
-
-
-    public List<ChatMessage> getChatHistory(Long senderId, Long receiverId) {
-        return chatRepository.findBySenderIdAndReceiverIdOrderBySentAtDesc(senderId, receiverId);
-    }
-
-
-
 
     @Transactional
     public ChatMessage sendMessage(Long receiverId, String messageText) {
@@ -48,20 +39,37 @@ public class ChatService {
         message.setReceiver(receiver);
         message.setMessageText(messageText);
         message.setSentAt(LocalDateTime.now());
+        message.setIsEventMessage(false);
 
         return chatRepository.save(message);
     }
 
+    @Transactional
     public void deleteMessage(Long messageId) {
-        ChatMessage message = chatRepository.findById(messageId).orElseThrow(() -> new EntityNotFoundException());
-        chatRepository.delete(message);
+        ChatMessage message = chatRepository.findById(messageId)
+                .orElseThrow(() -> new EntityNotFoundException("Message not found"));
 
+        // Sadece mesajı gönderen kişi silebilir
+        User currentUser = userService.getCurrentUser();
+        if (!message.getSender().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("You can only delete your own messages");
+        }
+
+        chatRepository.delete(message);
     }
 
-    public ChatMessage updateMessage(Long messageId, String message) {
-        ChatMessage existingMessage = chatRepository.findById(messageId)
-                .orElseThrow(() -> new EntityNotFoundException());
-        existingMessage.setMessageText(message);
-        return chatRepository.save(existingMessage);
+    @Transactional
+    public ChatMessage updateMessage(Long messageId, String newMessageText) {
+        ChatMessage message = chatRepository.findById(messageId)
+                .orElseThrow(() -> new EntityNotFoundException("Message not found"));
+
+        // Sadece mesajı gönderen kişi güncelleyebilir
+        User currentUser = userService.getCurrentUser();
+        if (!message.getSender().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("You can only update your own messages");
+        }
+
+        message.setMessageText(newMessageText);
+        return chatRepository.save(message);
     }
 }

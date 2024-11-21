@@ -20,13 +20,21 @@ public class ChatMessage {
     private User sender;
 
     @ManyToOne
-    @JoinColumn(name = "receiver_id", nullable = false)
+    @JoinColumn(name = "receiver_id")
     @JsonIgnore
     private User receiver;
+
+    @ManyToOne
+    @JoinColumn(name = "event_id")
+    @JsonIgnore
+    private Event event;
 
     @Column(name = "message_text", nullable = false)
     private String messageText;
 
     @Column(name = "sent_at", nullable = false)
     private LocalDateTime sentAt = LocalDateTime.now();
+
+    @Column(name = "is_event_message")
+    private Boolean isEventMessage = false;
 }

@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.querySelector('#search-input');
 
     let allUsers = [];
-
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUserId = urlParams.get('userId');
     // Load users list
     function loadUsers() {
         fetch('/user/users/list')
@@ -16,11 +17,22 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(users => {
                 allUsers = users.filter(user => user.id !== currentUserId);
                 displayUsers(allUsers);
+
+                // Eğer URL'de userId varsa, o kullanıcıyla sohbeti başlat
+                if (targetUserId) {
+                    const targetUser = allUsers.find(user => user.id === parseInt(targetUserId));
+                    if (targetUser) {
+                        const targetContactDiv = document.querySelector(`.contact-item[data-user-id="${targetUserId}"]`);
+                        if (targetContactDiv) {
+                            targetContactDiv.click(); // Otomatik olarak kullanıcıyı seç
+                        }
+                    }
+                }
             })
             .catch(err => console.error('Error loading user list:', err));
     }
 
-    // Display users in the contact list
+
     function displayUsers(users) {
         contactsList.innerHTML = '';
         users.forEach(user => {
@@ -28,21 +40,35 @@ document.addEventListener('DOMContentLoaded', function () {
             contactDiv.className = 'contact-item';
             contactDiv.dataset.userId = user.id;
 
-            const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`;
+            if (targetUserId && user.id === parseInt(targetUserId)) {
+                contactDiv.className += ' active';
+            }
+
+            // Profil fotoğrafı veya baş harfler için HTML
+            const profileHTML = user.profileImageUrl ?
+                `<img src="${user.profileImageUrl}" alt="Profile" class="w-10 h-10 rounded-full object-cover">` :
+                `<div class="contact-avatar">${user.firstName.charAt(0)}${user.lastName.charAt(0)}</div>`;
+
             contactDiv.innerHTML = `
-                <div class="contact-avatar">${initials}</div>
+            <div class="flex items-center gap-3">
+                ${profileHTML}
                 <div class="contact-info">
                     <div class="contact-name">${user.firstName} ${user.lastName}
                         <span class="online-status ${user.online ? '' : 'offline-status'}"></span>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
 
             contactDiv.addEventListener('click', () => {
                 document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('active'));
                 contactDiv.classList.add('active');
                 loadMessages(user.id);
                 updateChatHeader(user);
+
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('userId', user.id);
+                window.history.pushState({}, '', newUrl);
             });
 
             contactsList.appendChild(contactDiv);
@@ -65,15 +91,19 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update chat header
     function updateChatHeader(user) {
         const chatHeader = document.querySelector('.chat-header');
+        const profileHTML = user.profileImageUrl ?
+            `<img src="${user.profileImageUrl}" alt="Profile" class="w-10 h-10 rounded-full object-cover">` :
+            `<div class="contact-avatar">${user.firstName.charAt(0)}${user.lastName.charAt(0)}</div>`;
+
         chatHeader.innerHTML = `
-            <div class="flex items-center">
-                <div class="contact-avatar">${user.firstName.charAt(0)}${user.lastName.charAt(0)}</div>
-                <div class="ml-3">
-                    <div class="font-semibold">${user.firstName} ${user.lastName}</div>
-                    <div class="text-sm text-gray-500">${user.online ? 'Çevrimiçi' : 'Çevrimdışı'}</div>
-                </div>
+        <div class="flex items-center">
+            ${profileHTML}
+            <div class="ml-3">
+                <div class="font-semibold">${user.firstName} ${user.lastName}</div>
+                <div class="text-sm text-gray-500">${user.online ? 'Çevrimiçi' : 'Çevrimdışı'}</div>
             </div>
-        `;
+        </div>
+    `;
     }
 
     // Load messages
@@ -98,19 +128,31 @@ document.addEventListener('DOMContentLoaded', function () {
         messageDiv.className = `message ${isReceived ? 'message-received' : 'message-sent'}`;
         messageDiv.dataset.messageId = message.id;
 
+        // Profil fotoğrafı URL'sini belirle
+        const profileImageUrl = isReceived ?
+            (message.senderProfileImageUrl || '/images/default-avatar.png') :
+            (message.senderProfileImageUrl || '/images/default-avatar.png');
+
         messageDiv.innerHTML = `
-            <div class="message-content">${message.messageText}</div>
-            <div class="message-time">${formatMessageTime(message.sentAt)}</div>
-            ${!isReceived ? '<div class="read-status">Okundu</div>' : ''}
+        <div class="flex items-start ${isReceived ? '' : 'flex-row-reverse'}">
+            <img src="${profileImageUrl}" 
+                 alt="Profile" 
+                 class="w-8 h-8 rounded-full ${isReceived ? 'mr-2' : 'ml-2'} object-cover">
+            <div class="flex flex-col ${isReceived ? '' : 'items-end'}">
+                <div class="message-content">${message.messageText}</div>
+                <div class="message-time">${formatMessageTime(message.sentAt)}</div>
+                ${!isReceived ? '<div class="read-status">Okundu</div>' : ''}
+            </div>
             ${!isReceived ? `
                 <div class="message-actions">
                     <span class="action-button edit-message">✏️</span>
                     <span class="action-button delete-message">🗑️</span>
                 </div>
             ` : ''}
-        `;
+        </div>
+    `;
 
-        // Add event listeners for edit and delete actions
+        // Event listeners ekle
         const editButton = messageDiv.querySelector('.edit-message');
         const deleteButton = messageDiv.querySelector('.delete-message');
 
@@ -192,6 +234,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 .catch(err => console.error('Error deleting message:', err));
         }
     }
+
+    messageInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // Varsayılan enter davranışını engelle
+
+            const activeContact = document.querySelector('.contact-item.active');
+            if (activeContact && messageInput.value.trim() !== '') {
+                const receiverId = parseInt(activeContact.dataset.userId);
+                const message = messageInput.value.trim();
+                sendMessage(receiverId, message)
+                    .then(() => {
+                        messageInput.value = '';
+                        loadMessages(receiverId);
+                    })
+                    .catch(err => console.error('Error sending message:', err));
+            }
+        }
+    });
 
     loadUsers();
 });

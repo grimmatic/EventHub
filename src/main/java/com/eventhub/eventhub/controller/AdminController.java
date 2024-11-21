@@ -6,6 +6,7 @@ import com.eventhub.eventhub.service.EventService;
 import com.eventhub.eventhub.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,13 +56,38 @@ public class AdminController {
     }
     @PostMapping("/event/toggle/{id}")
     @ResponseBody
+    @Transactional
     public Map<String, String> toggleEventStatus(@PathVariable Long id) {
         try {
             Event event = eventService.getEventById(id);
-            event.setApproved(!event.getApproved());
-            eventService.updateEvent(event);
-            return Map.of("status", "success", "message", "Etkinlik durumu güncellendi");
+            System.out.println("Etkinlik durumu değiştiriliyor - ID: " + id + ", Mevcut durum: " + event.getApproved());
+
+            // Yeni durumu belirle
+            boolean newStatus = !event.getApproved();
+
+            // Event nesnesini güncelle
+            Event updatedEvent = new Event();
+            updatedEvent.setId(event.getId());
+            updatedEvent.setApproved(newStatus);
+            // Diğer gerekli alanları da kopyala
+            updatedEvent.setName(event.getName());
+            updatedEvent.setDescription(event.getDescription());
+            updatedEvent.setStartDate(event.getStartDate());
+            updatedEvent.setEndDate(event.getEndDate());
+            updatedEvent.setLocation(event.getLocation());
+            updatedEvent.setCategory(event.getCategory());
+            updatedEvent.setLatitude(event.getLatitude());
+            updatedEvent.setLongitude(event.getLongitude());
+            updatedEvent.setCreator(event.getCreator());
+
+            // Güncellemeyi yap
+            eventService.updateEvent(updatedEvent);
+
+            String message = newStatus ? "Etkinlik aktif edildi" : "Etkinlik pasife alındı";
+            return Map.of("status", "success", "message", message);
         } catch (Exception e) {
+            System.err.println("Toggle işlemi sırasında hata: " + e.getMessage());
+            e.printStackTrace();
             return Map.of("status", "error", "message", e.getMessage());
         }
     }

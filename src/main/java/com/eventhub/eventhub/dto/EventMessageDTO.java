@@ -1,7 +1,6 @@
 package com.eventhub.eventhub.dto;
 
-import com.eventhub.eventhub.entity.EventMessage;
-
+import com.eventhub.eventhub.entity.ChatMessage;
 import java.time.LocalDateTime;
 
 public class EventMessageDTO {
@@ -13,18 +12,20 @@ public class EventMessageDTO {
     private boolean isCurrentUser;
     private String firstName;
     private String lastName;
+    private String profileImageUrl;
 
-
-    public EventMessageDTO(EventMessage message) {
+    public EventMessageDTO(ChatMessage message) {
         this.id = message.getId();
         this.senderId = message.getSender().getId();
         this.eventId = message.getEvent().getId();
-        this.message = message.getMessage();
-        this.timestamp = message.getTimestamp();
+        this.message = message.getMessageText();
+        this.timestamp = message.getSentAt();
         this.firstName = message.getSender().getFirstName();
         this.lastName = message.getSender().getLastName();
+        this.profileImageUrl = message.getSender().getProfileImageUrl();
     }
 
+    // Getter ve Setter'lar aynı kalacak
     public Long getId() {
         return id;
     }
@@ -88,5 +89,11 @@ public class EventMessageDTO {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
 
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
 }

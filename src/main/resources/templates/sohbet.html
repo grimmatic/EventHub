@@ -357,5 +357,38 @@
         </div>
     </div>
 </div>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const selectedUser = /*[[${selectedUser}]]*/ null;
+        if (selectedUser) {
+
+            selectContact(selectedUser.id, selectedUser.firstName + ' ' + selectedUser.lastName);
+
+
+            const initialMessages = /*[[${initialMessages}]]*/ [];
+            if (initialMessages && initialMessages.length > 0) {
+                displayMessages(initialMessages);
+            }
+        }
+    });
+
+    function selectContact(userId, userName) {
+
+        const chatHeader = document.querySelector('.chat-header');
+        chatHeader.innerHTML = `
+            <div class="flex items-center">
+                <div class="">
+                    <div class="font-semibold">${userName}</div>
+                </div>
+            </div>
+        `;
+
+
+        loadMessages(userId);
+    }
+
+
+</script>
 </body>
 </html>

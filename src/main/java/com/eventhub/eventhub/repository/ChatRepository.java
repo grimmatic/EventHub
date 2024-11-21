@@ -5,8 +5,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ChatRepository extends JpaRepository<ChatMessage, Long> {
-    List<ChatMessage> findBySenderIdAndReceiverIdOrderBySentAtDesc(Long senderId, Long receiverId);
-    List<ChatMessage> findByReceiverIdOrderBySentAtDesc(Long receiverId);
+    // Özel mesajlar için
+    List<ChatMessage> findBySenderIdAndReceiverIdOrSenderIdAndReceiverIdOrderBySentAtAsc(
+            Long senderId1, Long receiverId1,
+            Long senderId2, Long receiverId2
+    );
 
-    List<ChatMessage> findBySenderIdAndReceiverIdOrSenderIdAndReceiverIdOrderBySentAtAsc(Long id, Long receiverId, Long receiverId1, Long id1);
+    // Etkinlik mesajları için
+    List<ChatMessage> findByEventIdAndIsEventMessageIsTrueOrderBySentAtAsc(Long eventId);
+
+    // Kullanıcının tüm mesajlarını bulmak için
+    List<ChatMessage> findBySenderIdAndReceiverIdOrderBySentAtDesc(Long senderId, Long receiverId);
+
+    // Alıcıya gelen tüm mesajları bulmak için
+    List<ChatMessage> findByReceiverIdOrderBySentAtDesc(Long receiverId);
 }

@@ -12,9 +12,13 @@ public interface UserPointsRepository extends JpaRepository<UserPoints, Long> {
 
     List<UserPoints> findByUserIdAndEventIdAndActivityType(Long userId, Long eventId, String activityType);
 
+    void deleteByEventId(Long eventId);
+
     @Query("SELECT COALESCE(SUM(up.points), 0) FROM UserPoints up WHERE up.user.id = :userId")
     Integer getTotalPointsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT COUNT(up) > 0 FROM UserPoints up WHERE up.user.id = :userId AND up.activityType = 'FIRST_EVENT'")
-    boolean hasFirstEventBonus(@Param("userId") Long userId);
+    @Query("SELECT COUNT(up) > 0 FROM UserPoints up WHERE up.user.id = :userId AND up.activityType = 'EVENT_JOIN'")
+    boolean hasAnyEventParticipation(@Param("userId") Long userId);
+
+
 }

@@ -1,8 +1,11 @@
 package com.eventhub.eventhub.controller;
 
+import com.eventhub.eventhub.dto.EventMessageDTO;
+import com.eventhub.eventhub.entity.ChatMessage;
 import com.eventhub.eventhub.entity.Event;
 import com.eventhub.eventhub.entity.User;
 import com.eventhub.eventhub.model.Location;
+import com.eventhub.eventhub.service.EventMessageService;
 import com.eventhub.eventhub.service.EventService;
 import com.eventhub.eventhub.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,8 @@ import com.eventhub.eventhub.service.LocationService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +30,7 @@ public class EventController {
     private final EventService eventService;
     private final UserService userService;
     private final LocationService locationService;
-
+    private final EventMessageService eventMessageService;
 
     @GetMapping("/etkinlikler")
     public String listEvents(
@@ -121,19 +126,22 @@ public class EventController {
             List<Event> similarEvents = eventService.getSimilarEvents(id);
             List<User> participants = eventService.getEventParticipants(id);
 
-            // Location bilgisini al
-            Location location = locationService.getLocationFromAddress(event);
-            model.addAttribute("location", location);
+            // Zamanla ilgili hesaplamalar
+            LocalDateTime now = LocalDateTime.now();
+            long daysLeft = ChronoUnit.DAYS.between(now, event.getStartDate());
+            long duration = ChronoUnit.HOURS.between(event.getStartDate(), event.getEndDate());
 
-            // Diğer etkinliklerin konumlarını al
-            List<Map<String, Object>> otherEventLocations = locationService.getOtherEventLocations(id);
-            model.addAttribute("otherEventLocations", otherEventLocations);
+            // Model'e yeni attributelar ekle
+            model.addAttribute("daysLeft", Math.max(0, daysLeft));
+            model.addAttribute("duration", duration);
 
+            // Mevcut attributelar
             model.addAttribute("event", event);
             model.addAttribute("isParticipant", isParticipant);
             model.addAttribute("similarEvents", similarEvents);
             model.addAttribute("participants", participants);
-
+            model.addAttribute("location", locationService.getLocationFromAddress(event));
+            model.addAttribute("otherEventLocations", locationService.getOtherEventLocations(id));
 
             return "event/detail";
         } catch (Exception e) {
@@ -214,5 +222,48 @@ public class EventController {
         model.addAttribute("totalParticipants", totalParticipants);
 
         return "event/organizer-events";
+    }
+    @GetMapping("/chat-messages")
+    @ResponseBody
+    public List<EventMessageDTO> getEventMessages(@RequestParam Long eventId) {
+        User currentUser = userService.getCurrentUser();
+        return eventMessageService.getEventMessages(eventId)
+                .stream()
+                .map(message -> {
+                    EventMessageDTO dto = new EventMessageDTO(message);
+                    dto.setCurrentUser(message.getSender().getId().equals(currentUser.getId()));
+                    // Profil fotoğrafı URL'sini ekleyin
+                    dto.setProfileImageUrl(message.getSender().getProfileImageUrl());
+                    return dto;
+                })
+                .toList();
+    }
+
+    @PostMapping("/send-message")
+    @ResponseBody
+    public Map<String, Object> sendEventMessage(
+            @RequestParam String message,
+            @RequestParam Long eventId) {
+        try {
+            ChatMessage sentMessage = eventMessageService.sendMessage(message, eventId);
+            User sender = sentMessage.getSender();
+
+            // Yanıt için gerekli verileri hazırla
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", sentMessage.getId());
+            response.put("message", sentMessage.getMessageText());
+            response.put("timestamp", sentMessage.getSentAt());
+            response.put("firstName", sender.getFirstName());
+            response.put("lastName", sender.getLastName());
+            response.put("profileImageUrl", sender.getProfileImageUrl());
+            response.put("currentUser", true);
+
+            return response;
+        } catch (Exception e) {
+            return Map.of(
+                    "error", true,
+                    "message", "Mesaj gönderilemedi: " + e.getMessage()
+            );
+        }
     }
 }

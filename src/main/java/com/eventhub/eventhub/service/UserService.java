@@ -228,7 +228,7 @@ public class UserService {
         }
 
         // İlk etkinlik katılımı kontrolü
-        if ("EVENT_JOIN".equals(activityType) && !userPointsRepository.hasFirstEventBonus(userId)) {
+        if ("EVENT_JOIN".equals(activityType) && !userPointsRepository.hasAnyEventParticipation(userId)) {
             UserPoints firstEventBonus = new UserPoints();
             firstEventBonus.setUser(user);
             firstEventBonus.setPoints(20);

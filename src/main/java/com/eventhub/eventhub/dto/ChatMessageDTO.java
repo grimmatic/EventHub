@@ -10,6 +10,8 @@ public class ChatMessageDTO {
     private String messageText;
     private LocalDateTime sentAt;
     private boolean isCurrentUser;
+    private String senderProfileImageUrl;
+    private String receiverProfileImageUrl;
 
     public ChatMessageDTO(ChatMessage message) {
         this.id = message.getId();
@@ -17,6 +19,8 @@ public class ChatMessageDTO {
         this.receiverId = message.getReceiver().getId();
         this.messageText = message.getMessageText();
         this.sentAt = message.getSentAt();
+        this.senderProfileImageUrl = message.getSender().getProfileImageUrl();
+        this.receiverProfileImageUrl = message.getReceiver().getProfileImageUrl();
     }
 
     // Getter ve Setter'lar
@@ -67,4 +71,20 @@ public class ChatMessageDTO {
     public void setCurrentUser(boolean isCurrentUser) {
         this.isCurrentUser = isCurrentUser;
     }
+    public String getSenderProfileImageUrl() {
+        return senderProfileImageUrl;
+    }
+
+    public void setSenderProfileImageUrl(String senderProfileImageUrl) {
+        this.senderProfileImageUrl = senderProfileImageUrl;
+    }
+
+    public String getReceiverProfileImageUrl() {
+        return receiverProfileImageUrl;
+    }
+
+    public void setReceiverProfileImageUrl(String receiverProfileImageUrl) {
+        this.receiverProfileImageUrl = receiverProfileImageUrl;
+    }
+
 }
