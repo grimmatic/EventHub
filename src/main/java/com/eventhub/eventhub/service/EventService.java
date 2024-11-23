@@ -47,7 +47,7 @@ public class EventService {
         // Admin otomatik onay kontrolü
         event.setApproved(creator.getRole() == UserRole.ROLE_ADMIN);
 
-        if (hasDateConflict(event.getStartDate(), event.getEndDate())) {
+        if (hasEventDateConflict(event.getStartDate(), event.getEndDate())) {
             throw new RuntimeException("Bu tarihte başka bir etkinliğiniz bulunmaktadır.");
         }
 
@@ -128,6 +128,15 @@ public class EventService {
             // Eğer oturum açılmamışsa, çakışma kontrolünü atla
             return false;
         }
+    }
+
+
+    public boolean hasEventDateConflict(LocalDateTime startDate, LocalDateTime endDate) {
+        return eventRepository.findAll().stream().anyMatch(event ->
+                (startDate.isAfter(event.getStartDate()) && startDate.isBefore(event.getEndDate())) ||
+                        (endDate.isAfter(event.getStartDate()) && endDate.isBefore(event.getEndDate())) ||
+                        (startDate.isBefore(event.getStartDate()) && endDate.isAfter(event.getEndDate()))
+        );
     }
 
 

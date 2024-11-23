@@ -18,6 +18,7 @@ import com.eventhub.eventhub.service.LocationService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
@@ -184,10 +185,12 @@ public class EventController {
     public Map<String, Boolean> checkDateConflicts(@RequestBody Map<String, String> dates) {
         try {
             // String tarihleri LocalDateTime'a dönüştür
-            LocalDateTime startDate = LocalDateTime.parse(dates.get("startDate"));
-            LocalDateTime endDate = LocalDateTime.parse(dates.get("endDate"));
+           LocalDateTime startDate = ZonedDateTime.parse(dates.get("startDate")).toLocalDateTime();
+            LocalDateTime endDate = ZonedDateTime.parse(dates.get("endDate")).toLocalDateTime();
 
-            boolean hasConflict = eventService.hasDateConflict(startDate, endDate);
+            boolean hasConflict = eventService.hasEventDateConflict(startDate, endDate);
+
+
             return Map.of("hasConflict", hasConflict);
         } catch (Exception e) {
             return Map.of("hasConflict", true);

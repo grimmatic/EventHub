@@ -1,5 +1,6 @@
 package com.eventhub.eventhub.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
@@ -122,6 +123,7 @@ public class User implements UserDetails {
     }
 
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Event> createdEvents = new ArrayList<>();
 
     public int getCreatedEventsCount() {
