@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,6 +49,14 @@ public class User implements UserDetails {
     @Column(name = "role")
     private UserRole role = UserRole.ROLE_USER;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Column(name = "location_updated_at")
+    private LocalDate locationUpdatedAt; // Konumun en son güncellendiği tarih
 
     @Column(name = "interests")
     private String interests;
@@ -63,14 +72,11 @@ public class User implements UserDetails {
     @Column(name = "total_points")
     private Integer totalPoints = 0;
 
-
     @Column(name = "profile_image")
     private String profileImageUrl;
 
-
-    @Transient  //
+    @Transient
     private MultipartFile profileImage;
-
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -101,6 +107,7 @@ public class User implements UserDetails {
     public boolean isCredentialsNonExpired() {
         return true;
     }
+
     @Column(name = "enabled")
     private Boolean enabled = true;
 
@@ -108,7 +115,6 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled != null && enabled;
     }
-
 
     @Override
     public String toString() {
@@ -133,5 +139,13 @@ public class User implements UserDetails {
         return (int) createdEvents.stream()
                 .filter(event -> Boolean.TRUE.equals(event.getApproved()))
                 .count();
+    }
+
+    /**
+     * Kullanıcı konumunun olup olmadığını kontrol eder.
+     */
+    @JsonIgnore
+    public boolean hasLocation() {
+        return latitude != null && longitude != null;
     }
 }
