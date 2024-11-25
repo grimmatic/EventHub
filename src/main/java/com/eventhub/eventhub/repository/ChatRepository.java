@@ -13,7 +13,7 @@ public interface ChatRepository extends JpaRepository<ChatMessage, Long> {
 
     // Etkinlik mesajları için
     List<ChatMessage> findByEventIdAndIsEventMessageIsTrueOrderBySentAtAsc(Long eventId);
-
+ //miyaw
     // Kullanıcının tüm mesajlarını bulmak için
     List<ChatMessage> findBySenderIdAndReceiverIdOrderBySentAtDesc(Long senderId, Long receiverId);
 
