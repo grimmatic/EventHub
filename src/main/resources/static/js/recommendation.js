@@ -1,24 +1,42 @@
+
+
+// Önerileri API'den çekme
 function fetchRecommendations() {
-    fetch('/api/recommendations')
+    // İstek durumunu göster
+    const container = document.querySelector('#featured-events');
+    container.innerHTML = "<p class='text-center col-span-3 text-gray-600'>Öneriler yükleniyor...</p>";
+
+    fetch('/api/recommendations', {
+        cache: 'no-cache',
+        headers: {
+            'Cache-Control': 'no-cache'
+        }
+    })
         .then(response => {
+            console.log('API Yanıtı:', response);
             if (!response.ok) {
-                throw new Error('Etkinlik önerilerini çekerken hata oluştu.');
+                console.error('API Yanıt Hatası:', response.statusText);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
+            console.log('Veri Başarıyla Alındı:', data);
             renderRecommendations(data);
         })
         .catch(error => {
-            console.error('API isteği sırasında bir hata oluştu:', error);
+            console.error('Hata:', error.message);
             const container = document.querySelector('#featured-events');
-            container.innerHTML = "<p class='text-center col-span-3 text-red-500'>Etkinlikler yüklenirken bir hata oluştu.</p>";
+            container.innerHTML = "<p class='text-center col-span-3 text-red-500'>Etkinlikler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.</p>";
         });
+
+
 }
 
+// Etkinlikleri ekrana render etme
 function renderRecommendations(events) {
     const container = document.querySelector('#featured-events');
-    container.innerHTML = ""; // "Etkinlikler yükleniyor..." mesajını temizle
+    container.innerHTML = ""; // Önce içeriği temizle
 
     if (events.length === 0) {
         container.innerHTML = "<p class='text-center col-span-3 text-gray-600'>Henüz önerilecek etkinlik bulunmamaktadır.</p>";
@@ -26,14 +44,15 @@ function renderRecommendations(events) {
     }
 
     events.forEach(event => {
+        console.log('Rendering Event:', event); // Hangi etkinliklerin render edildiğini kontrol edin
         const slide = document.createElement('div');
         slide.className = 'swiper-slide';
         const imagePath = `/images/categories/${event.category.toLowerCase()}.jpg`;
         slide.innerHTML = `
             <div class="event-card">
-            <img src="${imagePath}"
-                 alt="${event.category}"
-                 class="event-image">
+                <img src="${imagePath}"
+                     alt="${event.category}"
+                     class="event-image">
                 <div class="p-6">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -57,18 +76,19 @@ function renderRecommendations(events) {
                             </svg>
                             ${event.location || 'Bilinmeyen Konum'}
                         </span>
-                        <a href="/events/${event.id}" class="text-blue-600 hover:text-blue-800 font-medium">Detaylar →</a>
+                        <a href="/event/${event.id}" class="text-blue-600 hover:text-blue-800 font-medium">Detaylar →</a>
                     </div>
                 </div>
             </div>`;
         container.appendChild(slide);
     });
 
-    // Swiper'ı başlat
-    initializeSwiper();
+    initializeSwiper(); // Swiper başlat
 }
 
+// Swiper'ı başlatma
 function initializeSwiper() {
+    console.log('Initializing Swiper...'); // Swiper'ın başlatılıp başlatılmadığını kontrol edin
     new Swiper('.swiper', {
         slidesPerView: 3,
         spaceBetween: 20,
@@ -90,5 +110,7 @@ function initializeSwiper() {
     });
 }
 
-// Sayfa yüklendiğinde API isteği yap
-document.addEventListener('DOMContentLoaded', fetchRecommendations);
+// Sayfa yüklendiğinde önerileri yükle
+document.addEventListener('DOMContentLoaded', () => {
+    fetchRecommendations();
+});
