@@ -25,6 +25,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     long countByApprovedIsTrue();
 
+
     List<Event> findByCreatorId(Long creatorId);
     @Query("SELECT e FROM Event e JOIN e.participants p WHERE p = :currentUser")
     List<Event> findByParticipantsUser(@Param("currentUser") User currentUser);
@@ -32,6 +33,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query("SELECT e FROM Event e WHERE e.approved = true ORDER BY e.startDate DESC")
     List<Event> findByApprovedIsTrue();
+
+    // Tüm etkinlikleri onay durumuna bakmaksızın getirir
+    @Query("SELECT e FROM Event e ORDER BY SIZE(e.participants) DESC")
+    List<Event> findAllEvents();
+
     Page<Event> findByApprovedIsTrue(Pageable pageable);
     Page<Event> findByApprovedIsTrueAndStartDateBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
     Page<Event> findByApprovedIsTrueAndNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String nameKeyword, String descriptionKeyword, Pageable pageable);

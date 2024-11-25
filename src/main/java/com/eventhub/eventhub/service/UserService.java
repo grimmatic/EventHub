@@ -39,6 +39,8 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final UserPointsRepository userPointsRepository;
+    private final RecommendationService recommendationService; // Bunu yeni ekleidm
+
     @Value("${file.upload-dir:uploads/profiles}")
     private String uploadDir;
 
@@ -127,14 +129,16 @@ public class UserService {
 
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() &&
-                !"anonymousUser".equals(authentication.getPrincipal())) {
-            String username = authentication.getName();
-            return userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+        if (authentication == null || !authentication.isAuthenticated() ||
+                "anonymousUser".equals(authentication.getPrincipal())) {
+            return null; // Kullanıcı oturumu yok
         }
-        throw new RuntimeException("Oturum açılmamış");
+
+        String username = authentication.getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + username));
     }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
