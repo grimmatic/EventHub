@@ -121,6 +121,8 @@ public class UserController {
             @RequestParam("phone") String phone,
             @RequestParam(value = "interests", required = false) String[] interests,
             @RequestParam(value = "profileImage", required = false) MultipartFile profileImage,
+            @RequestParam(value = "latitude", required = false) Double latitude,
+            @RequestParam(value = "longitude", required = false) Double longitude,
             RedirectAttributes redirectAttributes) {
 
         try {
@@ -130,16 +132,22 @@ public class UserController {
                 throw new RuntimeException("Kullanıcı bulunamadı");
             }
 
-            // Mevcut kullanıcının bilgilerini güncelle
+            // Kullanıcı bilgilerini güncelle
             currentUser.setFirstName(firstName);
             currentUser.setLastName(lastName);
             currentUser.setEmail(email);
             currentUser.setPhone(phone);
             currentUser.setInterests(interests != null ? interests : new String[0]);
 
+            // Konum bilgilerini güncelle
+            if (latitude != null && longitude != null) {
+                currentUser.setLatitude(latitude);
+                currentUser.setLongitude(longitude);
+            }
 
+            // Kullanıcıyı güncelle
             userService.updateUser(currentUser, profileImage);
-            redirectAttributes.addFlashAttribute("success", "Profiliniz başarıyla güncellendi");
+            redirectAttributes.addFlashAttribute("success", "Profiliniz başarıyla güncellendi.");
             return "redirect:/user/profil";
         } catch (Exception e) {
             e.printStackTrace();
@@ -147,6 +155,7 @@ public class UserController {
             return "redirect:/user/profil-duzenle";
         }
     }
+
 
     @GetMapping("/users/list")
     @ResponseBody

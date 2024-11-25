@@ -2,12 +2,10 @@ package com.eventhub.eventhub.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Digits;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,10 +38,10 @@ public class Event {
     @Column(length = 100)
     private String category;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false)
     private Double latitude;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false)
     private Double longitude;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -53,7 +51,6 @@ public class Event {
 
     @Column(name = "approved")
     private Boolean approved = false;
-
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
