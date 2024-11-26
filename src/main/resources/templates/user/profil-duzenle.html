@@ -5,6 +5,11 @@
     <title>Profili Düzenle - EventHub</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
     <style>
         body {
             background-color: #f3f4f6;
@@ -248,6 +253,24 @@
             opacity: 1;
         }
 
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .location-info {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .hidden {
+            display: none;
+        }
+
+
         /* Responsive tasarım */
         @media (max-width: 640px) {
             .form-grid {
@@ -354,6 +377,7 @@
             <h2 class="section-title">Konum Bilgileri</h2>
             <p class="text-gray-600 text-sm mb-4">Etkinlik önerileri için konum bilginizi paylaşın veya güncelleyin.</p>
             <div class="form-grid">
+                <!-- Enlem ve Boylam Bilgisi -->
                 <div class="form-group">
                     <label class="form-label" for="latitude">Enlem (Latitude)</label>
                     <input type="text" id="latitude" name="latitude"
@@ -367,8 +391,27 @@
                            class="form-input" readonly required>
                 </div>
             </div>
-            <button type="button" id="updateLocationButton" class="btn btn-primary mt-4">Konumumu Güncelle</button>
+
+            <!-- Harita Alanı -->
+            <div class="form-group">
+                <label class="form-label">Konum Seçimi</label>
+                <p class="text-sm text-gray-600">Konumu haritadan seçin:</p>
+                <div id="map" style="height: 400px; border-radius: 8px; margin-bottom: 16px;"></div>
+            </div>
+
+            <!-- Seçilen Konum Bilgisi -->
+            <div id="locationInfo" class="location-info hidden">
+                <h3 class="font-semibold">Seçilen Konum</h3>
+                <p id="selectedAddress">-</p>
+                <p class="coordinates" id="selectedCoordinates">-</p>
+            </div>
+
+            <!-- Konum Güncelle Butonu -->
+            <p class="text-sm text-gray-600">Ya da, direkt olarak konumunuzu gönderin:</p>
+            <button type="button" id="updateLocationButton" class="btn btn-primary mt-4">Şuanki Konumu Al</button>
         </div>
+
+
 
 
 
@@ -721,7 +764,7 @@
                     document.getElementById('latitude').value = latitude;
                     document.getElementById('longitude').value = longitude;
 
-                    alert('Konum başarıyla güncellendi!');
+                   // alert('Konum başarıyla güncellendi!');
                 },
                 function (error) {
                     switch (error.code) {
@@ -743,6 +786,126 @@
             alert('Tarayıcınız konum bilgisi almayı desteklemiyor.');
         }
     });
+
+    let map, marker;
+
+    // Harita başlatma
+    function initMap() {
+        const defaultLocation = [41.0082, 28.9784]; // İstanbul merkezi koordinatları
+
+        map = L.map('map').setView(defaultLocation, 13);
+
+        // OpenStreetMap katmanı ekle
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Haritaya tıklama olayı
+        map.on('click', function (e) {
+            setLocation(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Geocoder ekle
+        L.Control.geocoder({
+            defaultMarkGeocode: false
+        })
+            .on('markgeocode', function (e) {
+                const latlng = e.geocode.center;
+                setLocation(latlng.lat, latlng.lng);
+                map.setView(latlng, 16);
+            })
+            .addTo(map);
+    }
+
+    // Konum ayarlama
+    function setLocation(lat, lng) {
+        // Varsa eski marker'ı kaldır
+        if (marker) {
+            map.removeLayer(marker);
+        }
+
+        // Yeni marker ekle
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+        // Marker sürüklenirken konumu güncelle
+        marker.on('dragend', function (e) {
+            const position = e.target.getLatLng();
+            setLocation(position.lat, position.lng);
+        });
+
+        // Form alanlarını doldur
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+
+        // Reverse geocoding ile adres bilgisini al
+        reverseGeocode(lat, lng);
+    }
+
+    // Reverse geocoding (adres bilgisi alma)
+    function reverseGeocode(lat, lng) {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    document.getElementById('locationInfo').classList.remove('hidden');
+                    document.getElementById('selectedAddress').textContent = data.display_name;
+                    document.getElementById('selectedCoordinates').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                } else {
+                    document.getElementById('selectedAddress').textContent = 'Adres alınamadı';
+                }
+            })
+            .catch(error => {
+                console.error('Adres alınamadı:', error);
+                document.getElementById('selectedAddress').textContent = 'Adres alınamadı';
+            });
+    }
+
+    document.getElementById('updateLocationButton').addEventListener('click', function () {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+
+                    // Konum bilgilerini form alanlarına yaz
+                    document.getElementById('latitude').value = latitude.toFixed(6);
+                    document.getElementById('longitude').value = longitude.toFixed(6);
+
+                    // Reverse geocoding çağrısı yap (Seçilen Konum kısmını doldurmak için)
+                    reverseGeocode(latitude, longitude);
+
+                   //alert('Konum başarıyla güncellendi!');
+                },
+                function (error) {
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            alert('Konum izni reddedildi.');
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            alert('Konum bilgisi mevcut değil.');
+                            break;
+                        case error.TIMEOUT:
+                            alert('Konum isteği zaman aşımına uğradı.');
+                            break;
+                        default:
+                            alert('Bilinmeyen bir hata oluştu.');
+                    }
+                }
+            );
+        } else {
+            alert('Tarayıcınız konum bilgisi almayı desteklemiyor.');
+        }
+    });
+
+
+    // Haritayı başlat
+    document.addEventListener('DOMContentLoaded', function () {
+        initMap(); // Haritayı başlat
+    });
+
+
+
+
 
 </script>
 </body>
