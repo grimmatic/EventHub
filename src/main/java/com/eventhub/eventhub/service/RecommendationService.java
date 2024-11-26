@@ -62,6 +62,11 @@ public class RecommendationService {
         // Önerilen etkinlikleri listeye çevir ve konuma göre sırala
         List<Event> sortedRecommendations = new ArrayList<>(recommendations);
 
+        //Eğer hiçbir ilgi alanı ve önceden giidilmiş etkinlik yoksa, tüm etkinlikleri gösteriyoruz
+        if(sortedRecommendations.isEmpty()){
+            return eventRepository.findAllEvents();
+        }
+
         // Konuma göre sıralama
         double userLat = user.getLatitude();
         double userLon = user.getLongitude();
