@@ -192,5 +192,42 @@ public class UserController {
             return "redirect:/";
         }
     }
+    @GetMapping("/sifremi-unuttum")
+    public String showForgotPasswordForm() {
+        return "user/sifremi-unuttum";
+    }
 
+    @PostMapping("/sifremi-unuttum")
+    public String processForgotPassword(@RequestParam String email, RedirectAttributes redirectAttributes) {
+        try {
+            userService.initiatePasswordReset(email);
+            redirectAttributes.addFlashAttribute("success",
+                    "Şifre sıfırlama bağlantısı email adresinize gönderildi");
+            return "redirect:/user/giris";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/user/sifremi-unuttum";
+        }
+    }
+
+    @GetMapping("/sifre-sifirla")
+    public String showResetPasswordForm(@RequestParam String token, Model model) {
+        model.addAttribute("token", token);
+        return "user/sifre-sifirla";
+    }
+
+    @PostMapping("/sifre-sifirla")
+    public String processResetPassword(
+            @RequestParam String token,
+            @RequestParam String password,
+            RedirectAttributes redirectAttributes) {
+        try {
+            userService.resetPassword(token, password);
+            redirectAttributes.addFlashAttribute("success", "Şifreniz başarıyla güncellendi");
+            return "redirect:/user/giris";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/user/sifre-sifirla?token=" + token;
+        }
+    }
 }

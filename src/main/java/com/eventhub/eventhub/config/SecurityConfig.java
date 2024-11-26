@@ -30,6 +30,8 @@ public class SecurityConfig {
                                 "/",
                                 "/user/kayit",
                                 "/user/giris",
+                                "/user/sifremi-unuttum",
+                                "/user/sifre-sifirla",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",

@@ -422,7 +422,7 @@
 
 
 
-       </div>
+    </div>
 
     <div class="bg-white rounded-lg p-6 shadow">
         <h2 class="text-xl font-semibold mb-6">Benzer Etkinlikler</h2>
@@ -734,46 +734,85 @@
             attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
         }).addTo(map);
 
+        // Event değişkenlerini Thymeleaf'ten al
+        const eventStartDate = /*[[${event.startDate}]]*/ '';
+        const eventDescription = /*[[${event.description}]]*/ '';
+
         // Mevcut etkinlik marker'ı
         currentEventMarker = L.marker([eventLocation.latitude, eventLocation.longitude], {
             icon: currentEventIcon
         })
             .addTo(map)
             .bindPopup(`
-        <b>${eventName}</b><br>
-        Mevcut Etkinlik<br>
-        <button onclick="setDestination(${eventLocation.latitude}, ${eventLocation.longitude}, '${eventName}')"
-                class="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm">
-            Buraya Git
-        </button>
-    `);
-
+            <div class="p-2">
+                <h3 class="font-bold text-lg mb-2">${eventName}</h3>
+                <div class="flex items-center text-gray-600 text-sm mb-2">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    ${new Date(eventStartDate).toLocaleString('tr-TR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}
+                </div>
+                <p class="text-gray-600 text-sm mb-3" style="max-height: 80px; overflow-y: auto;">
+                    ${eventDescription}
+                </p>
+                <button onclick="setDestination(${eventLocation.latitude}, ${eventLocation.longitude}, '${eventName}')"
+                        class="w-full px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
+                    Buraya Git
+                </button>
+            </div>
+        `);
 
         // Diğer etkinliklerin marker'larını ekle
-        otherEvents.forEach(event => {
-            const popupContent = `
-            <b>${event.name}</b><br>
-            <button onclick="setDestination(${event.latitude}, ${event.longitude}, '${event.name}')"
-                    class="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm">
-                Buraya Git
-            </button>
-        `;
+        if (otherEvents && otherEvents.length > 0) {
+            otherEvents.forEach(event => {
+                const popupContent = `
+                <div class="p-2">
+                    <h3 class="font-bold text-lg mb-2">${event.name}</h3>
+                    <div class="flex items-center text-gray-600 text-sm mb-2">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        ${new Date(event.startDate).toLocaleString('tr-TR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}
+                    </div>
+                    <p class="text-gray-600 text-sm mb-3" style="max-height: 80px; overflow-y: auto;">
+                        ${event.description}
+                    </p>
+                    <button onclick="setDestination(${event.latitude}, ${event.longitude}, '${event.name}')"
+                            class="w-full px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
+                        Buraya Git
+                    </button>
+                </div>
+            `;
 
-            // Aynı konumda birden fazla etkinlik için offset hesapla
-            const key = `${event.latitude},${event.longitude}`;
-            if (!otherEventMarkers[key]) {
-                otherEventMarkers[key] = [];
-            }
+                const marker = L.marker([event.latitude, event.longitude], {
+                    icon: otherEventIcon
+                })
+                    .addTo(map)
+                    .bindPopup(popupContent, {
+                        maxWidth: 300
+                    });
 
-            const offset = otherEventMarkers[key].length * 0.0001; // Marker'lar arası mesafe
-            const marker = L.marker([event.latitude + offset, event.longitude + offset], {
-                icon: otherEventIcon
-            })
-                .addTo(map)
-                .bindPopup(popupContent);
-
-            otherEventMarkers[key].push(marker);
-        });
+                const key = `${event.latitude},${event.longitude}`;
+                if (!otherEventMarkers[key]) {
+                    otherEventMarkers[key] = [];
+                }
+                otherEventMarkers[key].push(marker);
+            });
+        }
 
         // Haritaya tıklama olayını dinle
         map.on('click', function(e) {

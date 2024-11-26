@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -74,7 +75,11 @@ public class User implements UserDetails {
 
     @Column(name = "profile_image")
     private String profileImageUrl;
+    @Column(name = "reset_token")
+    private String resetToken;
 
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
     @Transient
     private MultipartFile profileImage;
 

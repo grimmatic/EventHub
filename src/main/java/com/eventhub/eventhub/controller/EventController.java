@@ -185,7 +185,7 @@ public class EventController {
     public Map<String, Boolean> checkDateConflicts(@RequestBody Map<String, String> dates) {
         try {
             // String tarihleri LocalDateTime'a dönüştür
-           LocalDateTime startDate = ZonedDateTime.parse(dates.get("startDate")).toLocalDateTime();
+            LocalDateTime startDate = ZonedDateTime.parse(dates.get("startDate")).toLocalDateTime();
             LocalDateTime endDate = ZonedDateTime.parse(dates.get("endDate")).toLocalDateTime();
 
             boolean hasConflict = eventService.hasEventDateConflict(startDate, endDate);

@@ -7,7 +7,9 @@ import com.eventhub.eventhub.entity.UserRole;
 import com.eventhub.eventhub.repository.UserPointsRepository;
 import com.eventhub.eventhub.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +29,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -40,7 +43,8 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final UserPointsRepository userPointsRepository;
     private final RecommendationService recommendationService; // Bunu yeni ekleidm
-
+    @Autowired
+    private EmailService emailService;
     @Value("${file.upload-dir:uploads/profiles}")
     private String uploadDir;
 
@@ -284,6 +288,42 @@ public class UserService {
 
         userRepository.save(user);
     }
+    public void initiatePasswordReset(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Bu email adresi ile kayıtlı kullanıcı bulunamadı"));
 
+        // Benzersiz token oluştur
+        String token = UUID.randomUUID().toString();
+
+        // Token'ı ve son kullanma tarihini kaydet
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30)); // 30 dakika geçerli
+        userRepository.save(user);
+
+        // Reset linkini oluştur
+        String resetLink = "http://localhost:8080/user/sifre-sifirla?token=" + token;
+
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Email gönderirken bir hata oluştu", e);
+        }
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Geçersiz veya süresi dolmuş token"));
+
+        // Token süresini kontrol et
+        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Şifre sıfırlama linkinin süresi dolmuş");
+        }
+
+        // Yeni şifreyi hashle ve kaydet
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+    }
 
 }

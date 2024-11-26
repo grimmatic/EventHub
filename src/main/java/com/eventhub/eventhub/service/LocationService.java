@@ -3,8 +3,11 @@ package com.eventhub.eventhub.service;
 import com.eventhub.eventhub.entity.Event;
 import com.eventhub.eventhub.model.Location;
 import com.eventhub.eventhub.repository.EventRepository;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,21 +23,23 @@ public class LocationService {
         this.eventRepository = eventRepository;
     }
 
-    public List<Map<String, Object>> getOtherEventLocations(Long currentEventId) {
+    public List<EventLocationDTO> getOtherEventLocations(Long currentEventId) {
         List<Event> events = eventRepository.findByApprovedIsTrue();
-        List<Map<String, Object>> eventLocations = new ArrayList<>();
+        List<EventLocationDTO> eventLocations = new ArrayList<>();
 
         for (Event event : events) {
             if (!event.getId().equals(currentEventId)) {
                 try {
                     Location loc = getLocationFromAddress(event);
                     if (isValidLocation(loc)) {
-                        Map<String, Object> eventInfo = new HashMap<>();
-                        eventInfo.put("id", event.getId());
-                        eventInfo.put("name", event.getName());
-                        eventInfo.put("latitude", loc.getLatitude());
-                        eventInfo.put("longitude", loc.getLongitude());
-                        eventInfo.put("address", event.getLocation());
+                        EventLocationDTO eventInfo = new EventLocationDTO();
+                        eventInfo.setId(event.getId());
+                        eventInfo.setName(event.getName());
+                        eventInfo.setDescription(event.getDescription());
+                        eventInfo.setStartDate(event.getStartDate());
+                        eventInfo.setLatitude(loc.getLatitude());
+                        eventInfo.setLongitude(loc.getLongitude());
+                        eventInfo.setAddress(event.getLocation());
                         eventLocations.add(eventInfo);
                     }
                 } catch (Exception e) {
@@ -76,5 +81,16 @@ public class LocationService {
                 location.getLatitude() <= 90 &&
                 location.getLongitude() >= -180 &&
                 location.getLongitude() <= 180;
+    }
+    @Getter
+    @Setter
+    public static class EventLocationDTO {
+        private Long id;
+        private String name;
+        private String description;
+        private LocalDateTime startDate;
+        private Double latitude;
+        private Double longitude;
+        private String address;
     }
 }
