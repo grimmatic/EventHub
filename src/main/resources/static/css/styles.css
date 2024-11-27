@@ -214,3 +214,33 @@ body {
         right: 1rem;
     }
 }
+
+.swiper{padding: 0!important;}
+.swiper-button-prev:after,.swiper-button-next:after {
+    font-size: 15px;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+.swiper-slide{
+    height: auto;
+
+}
+.event-card{
+    margin-bottom: 15px;
+    height: 100%;
+}
+@media (min-width:991px){
+    .featured-events .swiper-button-prev{
+        left: -45px!important;
+    }
+    .featured-events .swiper-button-next{
+        right: -45px!important;
+    }
+}
+#featured-events{
+    padding-top: 15px;
+    padding-bottom: 15px;
+}

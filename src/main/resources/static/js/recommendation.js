@@ -93,11 +93,15 @@ function initializeSwiper() {
         slidesPerView: 3,
         spaceBetween: 20,
         centeredSlides:false,
+        autoHeight: false,
         navigation: {
             nextEl: '.swiper-button-next',
             prevEl: '.swiper-button-prev',
         },
         breakpoints: {
+            0: {
+                slidesPerView: 1,
+            },
             768: {
                 slidesPerView: 1,
             },
