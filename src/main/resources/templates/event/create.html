@@ -117,9 +117,12 @@
 
 <div class="create-container">
     <div class="create-card">
-        <h1 class="text-2xl font-bold mb-6">Yeni Etkinlik Oluştur</h1>
+        <h1 class="text-2xl font-bold mb-6" th:text="${event != null ? 'Etkinlik Düzenle' : 'Yeni Etkinlik Oluştur'}">
+            Yeni Etkinlik Oluştur
+        </h1>
 
-        <form th:action="@{/event/create}" method="post" enctype="multipart/form-data">
+
+        <form th:action="${event != null ? '/event/update/' + event.id : '/event/create'}" method="post" enctype="multipart/form-data">
             <!-- Temel Bilgiler -->
             <div class="form-section">
                 <h2 class="text-lg font-semibold mb-4">Temel Bilgiler</h2>
@@ -127,13 +130,15 @@
                 <div class="form-group">
                     <label class="form-label" for="name">Etkinlik Adı*</label>
                     <input type="text" id="name" name="name" class="form-input" required
+                           th:value="${event != null ? event.name : ''}"
                            placeholder="Etkinliğiniz için açıklayıcı bir isim">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="description">Açıklama*</label>
                     <textarea id="description" name="description" rows="4" class="form-input" required
-                              placeholder="Etkinliğiniz hakkında detaylı bilgi verin"></textarea>
+                              placeholder="Etkinliğiniz hakkında detaylı bilgi verin"
+                              th:text="${event != null ? event.description : ''}"></textarea>
                 </div>
 
                 <div class="form-group">
@@ -142,6 +147,7 @@
                         <option value="">Kategori Seçin</option>
                         <option th:each="category : ${categories}"
                                 th:value="${category}"
+                                th:selected="${event != null && event.category == category}"
                                 th:text="${category}">Kategori</option>
                     </select>
                 </div>
@@ -154,12 +160,14 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label class="form-label" for="startDate">Başlangıç Tarihi ve Saati*</label>
-                        <input type="datetime-local" id="startDate" name="startDate" class="form-input" required>
+                        <input type="datetime-local" id="startDate" name="startDate" class="form-input" required
+                               th:value="${event != null ? #temporals.format(event.startDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="endDate">Bitiş Tarihi ve Saati*</label>
-                        <input type="datetime-local" id="endDate" name="endDate" class="form-input" required>
+                        <input type="datetime-local" id="endDate" name="endDate" class="form-input" required
+                               th:value="${event != null ? #temporals.format(event.endDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
                     </div>
                 </div>
 
@@ -196,9 +204,12 @@
                 </div>
 
                 <!-- Gizli input'lar -->
-                <input type="hidden" id="location" name="location" required>
-                <input type="hidden" id="latitude" name="latitude" required>
-                <input type="hidden" id="longitude" name="longitude" required>
+                <input type="hidden" id="location" name="location" required
+                       th:value="${event != null ? event.location : ''}">
+                <input type="hidden" id="latitude" name="latitude" required
+                       th:value="${event != null ? event.latitude : ''}">
+                <input type="hidden" id="longitude" name="longitude" required
+                       th:value="${event != null ? event.longitude : ''}">
             </div>
 
             <!-- Form gönderme butonları -->
@@ -209,7 +220,8 @@
                 </button>
 
                 <button type="submit"
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                        th:text="${event != null ? 'Etkinliği Düzenle' : 'Etkinlik Oluştur'}">
                     Etkinlik Oluştur
                 </button>
             </div>
@@ -275,10 +287,15 @@
 
 
     function initMap() {
-        // İstanbul merkezi koordinatları
-        const defaultLocation = [41.0082, 28.9784];
+        // Sayfadaki gizli inputlardan koordinatları al
+        const latitudeInput = document.getElementById('latitude');
+        const longitudeInput = document.getElementById('longitude');
 
-        map = L.map('map').setView(defaultLocation, 13);
+        // Varsayılan veya mevcut koordinatları belirle
+        let latitude = latitudeInput.value ? parseFloat(latitudeInput.value) : 41.0082;
+        let longitude = longitudeInput.value ? parseFloat(longitudeInput.value) : 28.9784;
+
+        map = L.map('map').setView([latitude, longitude], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
@@ -299,6 +316,11 @@
                 map.setView(latlng, 16);
             })
             .addTo(map);
+
+        // Eğer koordinatlar varsa marker'ı ekle
+        if (latitudeInput.value && longitudeInput.value) {
+            setLocation(latitude, longitude);
+        }
     }
 
     // Konum ayarlama fonksiyonu

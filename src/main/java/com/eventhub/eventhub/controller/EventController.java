@@ -124,6 +124,7 @@ public class EventController {
             Event event = eventService.getEventById(id);
             User currentUser = userService.getCurrentUser();
             boolean isParticipant = eventService.isUserParticipant(id, currentUser.getId());
+            boolean isCreator = event.getCreator().getId().equals(currentUser.getId());
             List<Event> similarEvents = eventService.getSimilarEvents(id);
             List<User> participants = eventService.getEventParticipants(id);
 
@@ -139,6 +140,7 @@ public class EventController {
             // Mevcut attributelar
             model.addAttribute("event", event);
             model.addAttribute("isParticipant", isParticipant);
+            model.addAttribute("isCreator", isCreator);
             model.addAttribute("similarEvents", similarEvents);
             model.addAttribute("participants", participants);
             model.addAttribute("location", locationService.getLocationFromAddress(event));
@@ -269,4 +271,81 @@ public class EventController {
             );
         }
     }
+
+    @DeleteMapping("/delete/{id}")
+    @ResponseBody
+    public Map<String, String> deleteEvent(@PathVariable Long id) {
+        try {
+            User currentUser = userService.getCurrentUser();
+            Event event = eventService.getEventById(id);
+
+            if (!event.getCreator().getId().equals(currentUser.getId())) {
+                return Map.of(
+                        "status", "error",
+                        "message", "Bu etkinliği silme yetkiniz yok!"
+                );
+            }
+
+            eventService.deleteEvent(id);
+            return Map.of(
+                    "status", "success",
+                    "message", "Etkinlik başarıyla silindi!"
+            );
+        } catch (Exception e) {
+            return Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            );
+        }
+    }
+
+    @GetMapping("/create/{id}")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        try {
+            User currentUser = userService.getCurrentUser();
+            Event event = eventService.getEventById(id);
+
+            if (!event.getCreator().getId().equals(currentUser.getId())) {
+                return "redirect:/event/etkinlikler";
+            }
+
+            List<String> categories = eventService.getAllCategories();
+            model.addAttribute("event", event);
+            model.addAttribute("categories", categories);
+            return "event/create";  // create.html sayfasını kullan
+        } catch (Exception e) {
+            return "redirect:/event/etkinlikler";
+        }
+    }
+
+    @PostMapping("/update/{id}")
+    public String updateEvent(@PathVariable Long id,
+                              @ModelAttribute Event event,
+                              @RequestParam("latitude") Double latitude,
+                              @RequestParam("longitude") Double longitude,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            User currentUser = userService.getCurrentUser();
+            Event existingEvent = eventService.getEventById(id);
+
+            if (!existingEvent.getCreator().getId().equals(currentUser.getId())) {
+                redirectAttributes.addFlashAttribute("error", "Bu etkinliği düzenleme yetkiniz yok!");
+                return "redirect:/event/etkinlikler";
+            }
+
+            event.setId(id);
+            event.setLatitude(latitude);
+            event.setLongitude(longitude);
+            event.setCreator(currentUser);
+            event.setApproved(existingEvent.getApproved());
+
+            eventService.updateEvent(event);
+            redirectAttributes.addFlashAttribute("success", "Etkinlik başarıyla güncellendi!");
+            return "redirect:/event/" + id;
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/event/create/" + id;
+        }
+    }
+
 }

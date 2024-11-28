@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="flex flex-col ${isReceived ? '' : 'items-end'}">
                 <div class="message-content">${message.messageText}</div>
                 <div class="message-time">${formatMessageTime(message.sentAt)}</div>
-                ${!isReceived ? '<div class="read-status">Okundu</div>' : ''}
+              
             </div>
             ${!isReceived ? `
                 <div class="message-actions">

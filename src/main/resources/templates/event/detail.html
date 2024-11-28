@@ -21,7 +21,21 @@
             position: relative;
             overflow: hidden;
         }
+        #deleteModal {
+            position: fixed;
+            z-index: 9999;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
 
+        #deleteModal .relative {
+            z-index: 10000;
+        }
+
+
+        .modal-content {
+            z-index: 10000;
+            position: relative;
+        }
         .event-header::before {
             content: '';
             position: absolute;
@@ -171,19 +185,59 @@
                         </span>
                 </div>
             </div>
-            <div>
-                <button th:if="${!isParticipant}" id="joinButton"
-                        class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg">
-                    Katıl
-                </button>
-                <button th:if="${isParticipant}" id="leaveButton"
-                        class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-lg">
-                    Etkinlikten Çık
-                </button>
+            <div class="flex items-center gap-2">
+                <!-- Katıl/Çık butonları -->
+                <div >
+                    <button th:if="${!isParticipant}" id="joinButton"
+                            class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg">
+                        Katıl
+                    </button>
+                    <button th:if="${isParticipant}" id="leaveButton"
+                            class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-lg">
+                        Etkinlikten Çık
+                    </button>
+                </div>
+
+                <!-- Creator butonları -->
+                <div th:if="${isCreator}" class="flex gap-2">
+                    <a th:href="@{'/event/create/' + ${event.id}}"
+                       class="px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">
+                        Düzenle
+                    </a>
+
+                    <button onclick="deleteEvent()"
+                            class="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        Sil
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+        <div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white modal-content">
+                    <div class="mt-3 text-center">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Etkinliği Sil</h3>
+                        <div class="mt-2 px-7 py-3">
+                            <p class="text-sm text-gray-500">
+                                Bu etkinliği silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                            </p>
+                        </div>
+                        <div class="items-center px-4 py-3">
+                            <button id="deleteConfirm"
+                                    class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                                Evet, Sil
+                            </button>
+                            <button id="deleteCancel"
+                                    class="ml-2 px-4 py-2 bg-gray-100 text-gray-600 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                                İptal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+
 
 <!-- Main Content -->
 <div class="max-w-6xl mx-auto px-4 py-8">
@@ -1111,7 +1165,39 @@
 
 
     }
+    function deleteEvent() {
+        const modal = document.getElementById('deleteModal');
+        const eventId = window.location.pathname.split('/').pop();
 
+        modal.classList.remove('hidden');
+
+        document.getElementById('deleteCancel').onclick = function() {
+            modal.classList.add('hidden');
+        }
+
+        document.getElementById('deleteConfirm').onclick = function() {
+            fetch(`/event/delete/${eventId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        window.location.href = '/event/etkinlikler';
+                    } else {
+                        alert(data.message);
+                        modal.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Bir hata oluştu!');
+                    modal.classList.add('hidden');
+                });
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', initMap);
 </script>

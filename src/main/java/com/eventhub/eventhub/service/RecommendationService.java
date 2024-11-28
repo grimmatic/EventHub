@@ -27,6 +27,9 @@ public class RecommendationService {
      * Önerilen etkinlikleri konuma göre sıralar.
      */
     public List<Event> getRecommendations(User user) {
+        if (user.getLatitude() == null || user.getLongitude() == null || user.getInterests() == null) {
+            return eventRepository.findAllEvents();
+        }
         // Kullanıcının katıldığı etkinliklerin türlerini topla
         List<Participant> participants = participantRepository.findByUserId(user.getId());
         Set<String> attendedCategories = new HashSet<>(); // Katıldığı etkinliklerin kategorileri

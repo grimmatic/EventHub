@@ -1,10 +1,7 @@
 package com.eventhub.eventhub.service;
 
 import com.eventhub.eventhub.entity.*;
-import com.eventhub.eventhub.repository.EventRepository;
-import com.eventhub.eventhub.repository.ParticipantRepository;
-import com.eventhub.eventhub.repository.UserPointsRepository;
-import com.eventhub.eventhub.repository.UserRepository;
+import com.eventhub.eventhub.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +22,8 @@ public class EventService {
     private final UserService userService;
     private final UserRepository userRepository;
     private final UserPointsRepository userPointsRepository;
+    private final ChatRepository chatRepository;
+    private final EventMessageService eventMessageService;
 
     public List<User> getEventParticipants(Long eventId) {
         return participantRepository.findByEventId(eventId).stream()
@@ -187,6 +186,28 @@ public class EventService {
     }
 
     @Transactional
+    public void deleteEvent(Long eventId) {
+        Event event = getEventById(eventId);
+
+        // Önce etkinlikle ilgili tüm puanları sil
+        removeEventCreatePoints(event);
+
+        // Katılımcıların puanlarını sil
+        List<Participant> participants = participantRepository.findByEventId(eventId);
+        for (Participant participant : participants) {
+            userService.removePoints(participant.getUser().getId(), eventId);
+        }
+        chatRepository.deleteByEventIdAndIsEventMessageIsTrue(eventId);
+        // Katılımcıları sil
+        participantRepository.deleteByEventId(eventId);
+
+        // Etkinliği sil
+        eventRepository.delete(event);
+    }
+
+
+
+    @Transactional
     public void approveEvent(Long eventId) {
         Event event = getEventById(eventId);
 
@@ -271,12 +292,19 @@ public class EventService {
     }
 
     @Transactional
-    public Event updateEvent(Event event) {
-        Event existingEvent = getEventById(event.getId());
-        System.out.println("Mevcut durum: " + existingEvent.getApproved() + ", Yeni durum: " + event.getApproved());
-
+    public Event updateEvent(Event updatedEvent) {
+        Event existingEvent = getEventById(updatedEvent.getId());
+        System.out.println("Mevcut durum: " + existingEvent.getApproved() + ", Yeni durum: " + updatedEvent.getApproved());
+        existingEvent.setName(updatedEvent.getName());
+        existingEvent.setDescription(updatedEvent.getDescription());
+        existingEvent.setCategory(updatedEvent.getCategory());
+        existingEvent.setStartDate(updatedEvent.getStartDate());
+        existingEvent.setEndDate(updatedEvent.getEndDate());
+        existingEvent.setLocation(updatedEvent.getLocation());
+        existingEvent.setLatitude(updatedEvent.getLatitude());
+        existingEvent.setLongitude(updatedEvent.getLongitude());
         // Etkinlik pasife alınıyorsa
-        if (Boolean.TRUE.equals(existingEvent.getApproved()) && !Boolean.TRUE.equals(event.getApproved())) {
+        if (Boolean.TRUE.equals(existingEvent.getApproved()) && !Boolean.TRUE.equals(updatedEvent.getApproved())) {
             User creator = existingEvent.getCreator();
             System.out.println("Organizatör için puan düşürme başlıyor - ID: " + creator.getId());
 
@@ -335,7 +363,7 @@ public class EventService {
         }
 
         // Event'i güncelle
-        existingEvent.setApproved(event.getApproved());
+        existingEvent.setApproved(updatedEvent.getApproved());
         return eventRepository.save(existingEvent);
     }
 

@@ -22,4 +22,12 @@ public class Participant {
 
     @Column(name = "joined_at", nullable = false)
     private LocalDateTime joinedAt = LocalDateTime.now();
+    @Override
+    public String toString() {
+        return "Participant{" +
+                "id=" + id +
+                ", userId=" + (user != null ? user.getId() : null) +
+                ", eventId=" + (event != null ? event.getId() : null) +
+                '}';
+    }
 }
