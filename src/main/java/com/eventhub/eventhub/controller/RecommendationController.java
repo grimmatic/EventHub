@@ -29,13 +29,8 @@ public class RecommendationController {
     @GetMapping
     public ResponseEntity<?> getRecommendations() {
         try {
-            System.out.println("Recommendation endpoint called");
             User user = userService.getCurrentUser();
-            System.out.println("Current user: " + (user != null ? user.getUsername() : "null"));
-
             List<Event> events = user == null ? recommendationService.getAllEvents() : recommendationService.getRecommendations(user);
-            System.out.println("Found events: " + events.size());
-
             return ResponseEntity.ok(events);
         } catch (Exception e) {
             e.printStackTrace();
