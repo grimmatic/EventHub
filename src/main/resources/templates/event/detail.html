@@ -199,7 +199,7 @@
                 </div>
 
                 <!-- Creator butonları -->
-                <div th:if="${isCreator}" class="flex gap-2">
+                <div th:if="${isCreator || #authentication.principal.role == T(com.eventhub.eventhub.entity.UserRole).ROLE_ADMIN}" class="flex gap-2">
                     <a th:href="@{'/event/create/' + ${event.id}}"
                        class="px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">
                         Düzenle

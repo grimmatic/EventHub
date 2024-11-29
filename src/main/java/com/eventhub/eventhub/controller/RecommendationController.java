@@ -27,16 +27,20 @@ public class RecommendationController {
     private UserService userService;
 
     @GetMapping
-    public List<Event> getRecommendations() {
-        User user = userService.getCurrentUser();
+    public ResponseEntity<?> getRecommendations() {
+        try {
+            System.out.println("Recommendation endpoint called");
+            User user = userService.getCurrentUser();
+            System.out.println("Current user: " + (user != null ? user.getUsername() : "null"));
 
-        // Eğer kullanıcı oturum açmamışsa, tüm etkinlikleri döndür
-        if (user == null) {
-            return recommendationService.getAllEvents(); // Tüm etkinlikleri döndüren metot
+            List<Event> events = user == null ? recommendationService.getAllEvents() : recommendationService.getRecommendations(user);
+            System.out.println("Found events: " + events.size());
+
+            return ResponseEntity.ok(events);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
-
-        // Kullanıcı oturum açmışsa, kişiselleştirilmiş önerileri döndür
-        return recommendationService.getRecommendations(user);
     }
 
 

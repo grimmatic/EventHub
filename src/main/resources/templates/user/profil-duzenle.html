@@ -791,32 +791,44 @@
 
     // Harita başlatma
     function initMap() {
-        const defaultLocation = [41.0082, 28.9784]; // İstanbul merkezi koordinatları
+        // Kayıtlı konum bilgilerini al
+        const savedLat = parseFloat(document.getElementById('latitude').value);
+        const savedLng = parseFloat(document.getElementById('longitude').value);
 
-        map = L.map('map').setView(defaultLocation, 13);
+        // Başlangıç konumunu belirle
+        const initialLocation = (savedLat && savedLng) ? [savedLat, savedLng] : [41.0082, 28.9784];
 
-        // OpenStreetMap katmanı ekle
+        map = L.map('map').setView(initialLocation, 13);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Haritaya tıklama olayı
-        map.on('click', function (e) {
+        // Kayıtlı konum varsa marker'ı ekle
+        if (savedLat && savedLng) {
+            marker = L.marker(initialLocation, { draggable: true }).addTo(map);
+            marker.on('dragend', function(e) {
+                const position = e.target.getLatLng();
+                setLocation(position.lat, position.lng);
+            });
+            // Konum bilgisini göster
+            reverseGeocode(savedLat, savedLng);
+        }
+
+        map.on('click', function(e) {
             setLocation(e.latlng.lat, e.latlng.lng);
         });
 
-        // Geocoder ekle
         L.Control.geocoder({
             defaultMarkGeocode: false
         })
-            .on('markgeocode', function (e) {
+            .on('markgeocode', function(e) {
                 const latlng = e.geocode.center;
                 setLocation(latlng.lat, latlng.lng);
                 map.setView(latlng, 16);
             })
             .addTo(map);
     }
-
     // Konum ayarlama
     function setLocation(lat, lng) {
         // Varsa eski marker'ı kaldır
