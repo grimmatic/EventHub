@@ -76,9 +76,11 @@ public class UserController {
                 model.addAttribute("profileImage", "/images/default-avatar.png");
             }
 
+            List<Event> createdEvents = eventService.getApprovedEventsByOrganizer(user.getId());
+            List<Event> participatedEvents = eventService.getParticipatedEvents(user.getId());
 
-            List<Event> userEvents = eventService.getApprovedEventsByOrganizer(user.getId());
-            model.addAttribute("userEvents", userEvents);
+            model.addAttribute("userEvents", createdEvents);
+            model.addAttribute("participatedEvents", participatedEvents);
             model.addAttribute("user", user);
             return "user/profil";
         } catch (Exception e) {
@@ -184,8 +186,11 @@ public class UserController {
                 model.addAttribute("profileImage", "/images/default-avatar.png");
             }
 
-            List<Event> userEvents = eventService.getApprovedEventsByOrganizer(userId);
-            model.addAttribute("userEvents", userEvents);
+            List<Event> createdEvents = eventService.getApprovedEventsByOrganizer(userId);
+            List<Event> participatedEvents = eventService.getParticipatedEvents(userId);
+
+            model.addAttribute("userEvents", createdEvents);
+            model.addAttribute("participatedEvents", participatedEvents);
             model.addAttribute("user", user);
             return "user/profil";
         } catch (Exception e) {

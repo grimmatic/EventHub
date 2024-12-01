@@ -145,12 +145,17 @@ public class User implements UserDetails {
                 .filter(event -> Boolean.TRUE.equals(event.getApproved()))
                 .count();
     }
-
-    /**
-     * Kullanıcı konumunun olup olmadığını kontrol eder.
-     */
+    @OneToMany(mappedBy = "user")
     @JsonIgnore
-    public boolean hasLocation() {
-        return latitude != null && longitude != null;
+    private List<Participant> participatedEvents = new ArrayList<>();
+
+    public int getParticipatedEventsCount() {
+        if (participatedEvents == null) {
+            return 0;
+        }
+        return (int) participatedEvents.stream()
+                .map(Participant::getEvent)
+                .filter(event -> Boolean.TRUE.equals(event.getApproved()))
+                .count();
     }
 }

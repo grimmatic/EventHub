@@ -290,7 +290,11 @@
     <div class="profile-stats" style="margin-left: 35rem">
         <div class="stat-item">
             <div class="stat-value" th:text="${user.getCreatedEventsCount()}">0</div>
-            <div class="stat-label">Etkinlik</div>
+            <div class="stat-label">Oluşturulan Etkinlik</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" th:text="${user.getParticipatedEventsCount()}">0</div>
+            <div class="stat-label">Katılınan Etkinlik</div>
         </div>
         <div class="stat-item">
             <div class="stat-value" th:text="${user.totalPoints ?: '0'}">0</div>
@@ -301,7 +305,8 @@
     <!-- Sekmeler -->
     <div class="profile-tabs flex mt-8">
         <div class="tab active" onclick="switchTab('about')">Hakkında</div>
-        <div class="tab" onclick="switchTab('events')">Etkinlikler</div>
+        <div class="tab" onclick="switchTab('created-events')">Oluşturulan Etkinlikler</div>
+        <div class="tab" onclick="switchTab('participated-events')">Katılınan Etkinlikler</div>
     </div>
 
     <!-- Sekme İçerikleri -->
@@ -341,10 +346,9 @@
         </div>
 
         <!-- Etkinlikler Sekmesi -->
-        <div id="events" class="tab-content" style="display: none;">
+        <div id="created-events" class="tab-content" style="display: none;">
             <div class="content-section">
                 <h3 class="text-lg font-semibold mb-4">Oluşturduğu Etkinlikler</h3>
-                <!-- Show message if no events -->
                 <div th:if="${#lists.isEmpty(userEvents)}" class="text-gray-500 text-center py-4">
                     Henüz etkinlik oluşturmamış.
                 </div>
@@ -367,6 +371,31 @@
             </div>
         </div>
 
+        <!-- Katılınan Etkinlikler Sekmesi -->
+        <div id="participated-events" class="tab-content" style="display: none;">
+            <div class="content-section">
+                <h3 class="text-lg font-semibold mb-4">Katıldığı Etkinlikler</h3>
+                <div th:if="${#lists.isEmpty(participatedEvents)}" class="text-gray-500 text-center py-4">
+                    Henüz bir etkinliğe katılmamış.
+                </div>
+                <!-- Event cards -->
+                <div th:each="event : ${participatedEvents}" class="event-card">
+                    <img th:src="@{'/images/categories/' + ${event.category.toLowerCase()} + '.jpg'}"
+                         th:alt="${event.category}"
+                         class="event-image">
+                    <div class="event-info">
+                        <h4 class="font-semibold" th:text="${event.name}">Event Name</h4>
+                        <p class="text-gray-600 text-sm"
+                           th:text="${#temporals.format(event.startDate, 'dd MMMM yyyy, HH:mm')}">Date</p>
+                        <p class="text-gray-500 text-sm mt-1" th:text="${event.location}">Location</p>
+                        <a th:href="@{/event/{id}(id=${event.id})}"
+                           class="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block">
+                            Detayları Görüntüle →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Fotoğraflar Sekmesi -->
         <div id="photos" class="tab-content" style="display: none;">
             <div class="content-section">
@@ -410,8 +439,10 @@
         const urlParams = new URLSearchParams(window.location.search);
         const activeTab = urlParams.get('tab');
 
-        if (activeTab === 'events') {
-            switchTab('events');
+        if (activeTab === 'created-events') {
+            switchTab('created-events');
+        } else if (activeTab === 'participated-events') {
+            switchTab('participated-events');
         }
     });
 

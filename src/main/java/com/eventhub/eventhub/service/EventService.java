@@ -366,7 +366,13 @@ public class EventService {
         existingEvent.setApproved(updatedEvent.getApproved());
         return eventRepository.save(existingEvent);
     }
-
+    @Transactional(readOnly = true)
+    public List<Event> getParticipatedEvents(Long userId) {
+        return participantRepository.findByUserId(userId).stream()
+                .map(Participant::getEvent)
+                .filter(event -> Boolean.TRUE.equals(event.getApproved()))
+                .collect(Collectors.toList());
+    }
 
     public long getTotalEvents() {
         return eventRepository.count();
